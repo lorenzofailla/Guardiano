@@ -13,11 +13,11 @@ import android.view.SurfaceView;
 
 import java.io.IOException;
 
-public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback{
+public class MainActivity extends AppCompatActivity {
 
     Camera mCamera;
-    SurfaceView cameraPreview;
-    SurfaceHolder cameraPreviewHolder;
+    CameraPreview cameraPreview;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,11 +34,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 50);
         }
 
-        // ottiene l'handler alla SurfaceView 'camera_preview'
-        cameraPreview=(SurfaceView) findViewById(R.id.camera_preview);
-        cameraPreviewHolder=cameraPreview.getHolder();
-        cameraPreviewHolder.addCallback(this);
-        cameraPreviewHolder.setFormat(SurfaceHolder.SURFACE_TYPE_HARDWARE);
+
 
         //start your camera
         if(safeCameraOpen()){
@@ -60,7 +56,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     protected void onPause() {
 
         super.onPause();
-        releaseCameraAndPreview();
+
+        cameraPreview.stopPreview();
 
     }
 
@@ -69,7 +66,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         boolean qOpened = false;
 
         try {
-            releaseCameraAndPreview();
+
             mCamera = Camera.open();
             qOpened = (mCamera != null);
             Log.i(getString(R.string.app_name), "connected to Camera");
@@ -91,48 +88,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         if (mCamera != null){
 
-            try {
-
-                mCamera.setPreviewDisplay(cameraPreviewHolder);
-                mCamera.startPreview();
-
-            } catch (IOException e) {
-
-                Log.e(getString(R.string.app_name), e.getMessage());
-
-            }
+            // definisce una nuova istanza della classe CameraPreview
+            cameraPreview= new CameraPreview(this.getApplicationContext(), mCamera);
 
         }
 
     }
 
-    private void releaseCameraAndPreview() {
-
-        if (mCamera != null) {
-            mCamera.release();
-            mCamera = null;
-        }
-
-    }
-
-    @Override
-    public void surfaceCreated(SurfaceHolder holder) {
-
-        startCameraPreview();
-
-    }
-
-    @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
-        startCameraPreview();
-
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
-
-        releaseCameraAndPreview();
-
-    }
 }

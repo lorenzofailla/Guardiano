@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">CameraControl</string>
+
+    <!-- messaggi di errore -->
+    <string name="ERR_surface_assignment_for_preview">Error in assignment of the surface holder for preview. :(</string>
+
 </resources>
