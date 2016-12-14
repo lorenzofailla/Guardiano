@@ -46,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
             Camera.Size cameraPreviewSize = cameraParameters.getPreviewSize();
             Log.i(getString(R.string.app_name), String.format("Preview size: %d x %d", cameraPreviewSize.width, cameraPreviewSize.height));
 
+
             startCameraPreview();
 
         }
@@ -89,7 +90,9 @@ public class MainActivity extends AppCompatActivity {
         if (mCamera != null){
 
             // definisce una nuova istanza della classe CameraPreview
-            cameraPreview= new CameraPreview(this.getApplicationContext(), mCamera);
+            cameraPreview= new CameraPreview(this.getApplicationContext());
+            cameraPreview.setAssignedCamera(mCamera);
+            cameraPreview.startPreview();
 
         }
 

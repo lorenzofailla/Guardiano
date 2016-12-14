@@ -1,6 +1,7 @@
 package com.example.lore_f.cameracontrol;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.hardware.Camera;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -18,44 +19,48 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private SurfaceHolder cameraPreviewHolder;
     private Camera assignedCamera;
 
-    CameraPreview (Context context, Camera camera){
+    CameraPreview (Context context){
 
         super(context);
 
-        initializeHolder(camera);
+        initializeHolder();
 
     }
 
-    CameraPreview (Context context, AttributeSet attrs, Camera camera){
+    CameraPreview (Context context, AttributeSet attrs){
 
         super(context, attrs);
 
-        initializeHolder(camera);
+        initializeHolder();
 
     }
 
-    CameraPreview (Context context, AttributeSet attrs, int defStyleAttr, Camera camera){
+    CameraPreview (Context context, AttributeSet attrs, int defStyleAttr){
 
         super(context, attrs, defStyleAttr );
 
-        initializeHolder(camera);
+        initializeHolder();
 
     }
 
-    private void initializeHolder(Camera camera){
+    private void initializeHolder(){
 
         cameraPreviewHolder = this.getHolder();
         cameraPreviewHolder.addCallback(this);
         cameraPreviewHolder.setFormat(SurfaceHolder.SURFACE_TYPE_HARDWARE);
 
-        if (camera != null) {
+    }
 
-            assignedCamera = camera;
+
+    public void setAssignedCamera(Camera camera){
+
+        if (camera != null){
+
+            assignedCamera=camera;
 
         }
 
     }
-
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
@@ -94,6 +99,24 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         }
 
+    }
+
+    @Override
+    public void onDraw(Canvas canvas){
+
+        super.onDraw(canvas);
+
+    }
+
+
+    @Override
+    protected void onMeasure(int w, int h){
+
+        super.onMeasure(w, h);
+
+        w=MeasureSpec.getSize(w);
+        h=MeasureSpec.getSize(h);
+        setMeasuredDimension(w, h);
     }
 
     public void stopPreview(){
