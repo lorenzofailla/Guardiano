@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">CameraControl</string>
 
+    <!-- MainActivity -->
+    <string name="MainActivity_mainLabel">Camera preview:</string>
+
     <!-- messaggi di errore -->
     <string name="ERR_surface_assignment_for_preview">Error in assignment of the surface holder for preview. :(</string>
 

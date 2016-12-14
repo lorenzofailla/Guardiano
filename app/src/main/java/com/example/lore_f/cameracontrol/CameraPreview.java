@@ -15,7 +15,7 @@ import java.io.IOException;
  */
 
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
-
+    //
     private SurfaceHolder cameraPreviewHolder;
     private Camera assignedCamera;
 
