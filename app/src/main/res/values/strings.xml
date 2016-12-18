@@ -3,6 +3,8 @@
 
     <!-- MainActivity -->
     <string name="MainActivity_mainLabel">Camera preview:</string>
+    <string name="MainActivity_buttonStartCapture">Start Capture</string>
+    <string name="MainActivity_buttonTakeShot">Take Shot</string>
 
     <!-- messaggi di errore -->
     <string name="ERR_surface_assignment_for_preview">Error in assignment of the surface holder for preview. :(</string>
