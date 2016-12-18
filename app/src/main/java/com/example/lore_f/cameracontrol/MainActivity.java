@@ -77,9 +77,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     }
 
     private void startCameraPreview() {
+
         // richiesta camera in modalità preview
         mCamera.startPreview();
     }
+
     @Override
     protected void onPause() {
 
@@ -192,7 +194,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
                 // get an image from the camera
                 mCamera.takePicture(null, null, takeShotCallBack);
-                startCameraPreview();
                 break;
 
         }
@@ -211,16 +212,26 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
 
             try {
+
                 FileOutputStream fos = new FileOutputStream(pictureFile);
                 fos.write(data);
                 fos.close();
 
                 Log.i(TAG, "Successfully wrote file " + pictureFile.getAbsolutePath());
 
+
             } catch (FileNotFoundException e) {
                 Log.d(TAG, "File not found: " + e.getMessage());
             } catch (IOException e) {
                 Log.d(TAG, "Error accessing file: " + e.getMessage());
+            }
+
+            // se necessario, pone nuovamente la camera in modalità preview
+            try {
+                startCameraPreview();
+            } catch (Exception e) {
+                Log.d(TAG, "Exception raised trying to restart the camera: " + e.getMessage());
+
             }
         }
     };
