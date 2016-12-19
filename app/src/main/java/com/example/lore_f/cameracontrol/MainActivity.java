@@ -118,6 +118,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         if (mCamera != null){
 
+            mCamera.setDisplayOrientation(90);
+
             // handler a
             cameraPreview = (SurfaceView) findViewById(R.id.camera_preview);
 
@@ -139,6 +141,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
             Camera.Parameters cameraParameters = mCamera.getParameters();
             cameraPreviewHolder.setFixedSize(cameraParameters.getPreviewSize().width, cameraParameters.getPreviewSize().height);
+
 
 
         }
@@ -192,7 +195,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
                 Log.i(TAG, "TAKE SHOT requested.");
 
+                // disable the button for starting the capture
+                findViewById(R.id.BTN___MAIN___STARTCAPTURE).setEnabled(false);
+
                 // get an image from the camera
+
                 mCamera.takePicture(null, null, takeShotCallBack);
                 break;
 
@@ -233,6 +240,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 Log.d(TAG, "Exception raised trying to restart the camera: " + e.getMessage());
 
             }
+
+            // re-enable the button for starting the capture
+            findViewById(R.id.BTN___MAIN___STARTCAPTURE).setEnabled(true);
+
         }
     };
 
