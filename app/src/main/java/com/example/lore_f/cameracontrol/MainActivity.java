@@ -3,8 +3,11 @@ package com.example.lore_f.cameracontrol;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -32,6 +35,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     Camera mCamera;
     SurfaceView cameraPreview;
     SurfaceHolder cameraPreviewHolder;
+    MediaRecorder mediaRecorder;
+    Handler taskHandler;
 
     final static String TAG = "CameraControl";
 
@@ -57,6 +62,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             //ask for authorisation
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 50);
         }
+
+        // inizializza il task handler
+        taskHandler = new Handler();
 
         // inizializza handlers ai drawable
         final Button btnStartCapture = (Button) findViewById(R.id.BTN___MAIN___STARTCAPTURE);
@@ -183,6 +191,35 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         switch (v.getId()) {
             case R.id.BTN___MAIN___STARTCAPTURE:
+
+                // inizializza il MediaRecorder
+                mediaRecorder = new MediaRecorder();
+
+                // sblocca la camera
+                mCamera.unlock();
+
+                // configura il MediaRecorder
+                mediaRecorder.setCamera(mCamera);
+                mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+                mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+                mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.MPEG_4_SP);
+                mediaRecorder.setOutputFile(getOutputMediaFile(MEDIA_TYPE_VIDEO).toString());
+                mediaRecorder.setPreviewDisplay(cameraPreviewHolder.getSurface());
+                try {
+
+                    mediaRecorder.prepare();
+                    mediaRecorder.start();
+
+                } catch (IOException e) {
+
+                    Log.e(TAG, "Error preparing the MediaRecorder");
+
+                }
+
+                Log.i(TAG, "Start");
+                findViewById(R.id.BTN___MAIN___STARTCAPTURE).setEnabled(false);
+                taskHandler.postAtTime(stopRecorder, SystemClock.uptimeMillis() + 5000);
+
                 break;
 
         }
@@ -221,18 +258,26 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
 
             } catch (FileNotFoundException e) {
+
                 Log.d(TAG, "File not found: " + e.getMessage());
+
             } catch (IOException e) {
+
                 Log.d(TAG, "Error accessing file: " + e.getMessage());
+
             }
 
             // se necessario, pone nuovamente la camera in modalità preview
             try {
+
                 startCameraPreview();
+
             } catch (Exception e) {
+
                 Log.d(TAG, "Exception raised trying to restart the camera: " + e.getMessage());
 
             }
+
         }
     };
 
@@ -278,5 +323,19 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         return mediaFile;
     }
+
+    private Runnable stopRecorder = new Runnable() {
+
+        @Override
+        public void run() {
+
+            mediaRecorder.stop();
+            mCamera.lock();
+
+            Log.i(TAG, "Stop");
+            findViewById(R.id.BTN___MAIN___STARTCAPTURE).setEnabled(true);
+
+        }
+    };
 
 }
