@@ -13,6 +13,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -40,7 +41,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     MediaRecorder mediaRecorder;
     Handler taskHandler;
 
-    final static String TAG = "CameraControl";
+    private final static String TAG = "CameraControl";
 
     public static final int MEDIA_TYPE_IMAGE = 1;
     public static final int MEDIA_TYPE_VIDEO = 2;
@@ -119,8 +120,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
                 // ritrova le dimensioni preferenziali della dimensione del video
                 try {
+
                     videoFrameHeight = cameraParameters.getPreferredPreviewSizeForVideo().height;
                     videoFrameWidth = cameraParameters.getPreferredPreviewSizeForVideo().width;
+
                 } catch (NullPointerException e) {
 
                     // set 1280×720
@@ -128,6 +131,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     videoFrameWidth = 1280;
 
                 }
+
                 // messaggio di Log
                 Log.i(TAG, String.format("Preferred video size: %dx%d", videoFrameWidth, videoFrameHeight));
 
@@ -213,18 +217,27 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
             }
 
+            Display display = getWindowManager().getDefaultDisplay();
 
-            Camera.Parameters parametersToBeSet = mCamera.getParameters();
-            parametersToBeSet.setPreviewSize(100, 100);
+            int width = display.getWidth();
+            int height = display.getHeight();
 
-            mCamera.setParameters(parametersToBeSet);
+            float cameraFrameRatio = (float) (mCamera.getParameters().getPreviewSize().width) / (float) (mCamera.getParameters().getPreviewSize().height);
 
-            /*
-            Camera.Parameters cameraParameters = mCamera.getParameters();
-            cameraPreviewHolder.setFixedSize(cameraParameters.getPreviewSize().width, cameraParameters.getPreviewSize().height);
-            */
+            printLogInfo(String.format("frame ratio = %.4f", cameraFrameRatio));
+
+            int previewSurfaceWidth = width / 2;
+            int previewSurfaceHeight = width / 2;
+
+            cameraPreviewHolder.setFixedSize(width / 2, (int) (width / 2.0 * cameraFrameRatio));
 
         }
+
+        /*
+        Camera.Parameters cameraParameters = mCamera.getParameters();
+        cameraParameters.setPreviewSize(100,100);
+        mCamera.setParameters(cameraParameters);
+        */
 
     }
 
@@ -249,6 +262,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
 
+        printLogInfo(String.format("i=%d, i1=%d, i2=%d", i, i1, i2));
         assignCameraPreviewSurface();
         startCameraPreview();
 
@@ -425,5 +439,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         }
     };
+
+    private void printLogInfo(String message) {
+
+        Log.i(TAG, message);
+
+    }
 
 }
