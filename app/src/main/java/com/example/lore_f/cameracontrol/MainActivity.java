@@ -3,8 +3,11 @@ package com.example.lore_f.cameracontrol;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -25,38 +28,76 @@ import java.util.Date;
 import java.util.List;
 
 // TODO: 18/12/2016 forzare il layout in modalità orizzontale
-// TODO: 18/12/2016 richiedere il preview della camera dopo il take shot
+// TODO: 24/12/2016 impostare qualità del video
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnClickListener {
 
     Camera mCamera;
+    Camera.Parameters cameraParameters;
+
     SurfaceView cameraPreview;
     SurfaceHolder cameraPreviewHolder;
+    MediaRecorder mediaRecorder;
+    Handler taskHandler;
 
     final static String TAG = "CameraControl";
 
     public static final int MEDIA_TYPE_IMAGE = 1;
     public static final int MEDIA_TYPE_VIDEO = 2;
 
+    private static final int PERMISSION_RECORD_AUDIO = 1;
+    private static final int PERMISSION_CAMERA = 2;
+    private static final int PERMISSION_WRITE_EXTERNAL_STORAGE = 3;
+
+    private int videoFrameHeight;
+    private int videoFrameWidth;
+
+    private boolean permissionFlag = true;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
     }
 
     @Override
     protected void onResume() {
+
         super.onResume();
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+
+            // set the value of flag
+            permissionFlag = permissionFlag && false;
+
             //ask for authorisation
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 50);
         }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+
+            // set the value of flag
+            permissionFlag = permissionFlag && false;
+
             //ask for authorisation
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 50);
+
         }
+
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+
+            // set the value of flag
+            permissionFlag = permissionFlag && false;
+
+            //ask for authorisation
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, 0);
+
+        }
+
+        // inizializza il task handler
+        taskHandler = new Handler();
 
         // inizializza handlers ai drawable
         final Button btnStartCapture = (Button) findViewById(R.id.BTN___MAIN___STARTCAPTURE);
@@ -67,10 +108,40 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         btnTakeShot.setOnClickListener(this);
 
         //start your camera
-        if (safeCameraOpen()) {
+        if (permissionFlag) {
 
-            assignCameraPreviewSurface();
-            startCameraPreview();
+            Log.i(TAG, "Permissions granted.");
+
+            if (safeCameraOpen()) {
+
+                // ritrova i parametri della camera
+                cameraParameters = mCamera.getParameters();
+
+                // ritrova le dimensioni preferenziali della dimensione del video
+                try {
+                    videoFrameHeight = cameraParameters.getPreferredPreviewSizeForVideo().height;
+                    videoFrameWidth = cameraParameters.getPreferredPreviewSizeForVideo().width;
+                } catch (NullPointerException e) {
+
+                    // set 1280×720
+                    videoFrameHeight = 720;
+                    videoFrameWidth = 1280;
+
+                }
+                // messaggio di Log
+                Log.i(TAG, String.format("Preferred video size: %dx%d", videoFrameWidth, videoFrameHeight));
+
+                // imposta la rotazione
+                mCamera.setDisplayOrientation(90);
+
+                assignCameraPreviewSurface();
+                startCameraPreview();
+
+            }
+
+        } else {
+
+            Log.i(TAG, "Missing permissions.");
 
         }
 
@@ -80,6 +151,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         // richiesta camera in modalità preview
         mCamera.startPreview();
+
     }
 
     @Override
@@ -87,7 +159,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         super.onPause();
 
-        mCamera.stopPreview();
+        if (mCamera != null) {
+
+            mCamera.stopPreview();
+
+        }
 
     }
 
@@ -118,8 +194,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         if (mCamera != null){
 
-            mCamera.setDisplayOrientation(90);
-
             // handler a
             cameraPreview = (SurfaceView) findViewById(R.id.camera_preview);
 
@@ -139,10 +213,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
             }
 
+
+            Camera.Parameters parametersToBeSet = mCamera.getParameters();
+            parametersToBeSet.setPreviewSize(100, 100);
+
+            mCamera.setParameters(parametersToBeSet);
+
+            /*
             Camera.Parameters cameraParameters = mCamera.getParameters();
             cameraPreviewHolder.setFixedSize(cameraParameters.getPreviewSize().width, cameraParameters.getPreviewSize().height);
-
-
+            */
 
         }
 
@@ -186,20 +266,55 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         switch (v.getId()) {
             case R.id.BTN___MAIN___STARTCAPTURE:
+
+                // inizializza il MediaRecorder
+                mediaRecorder = new MediaRecorder();
+
+                // sblocca la camera
+                mCamera.unlock();
+
+                // configura il MediaRecorder
+                mediaRecorder.setCamera(mCamera);
+                mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+                mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+                mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+                mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+                mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+                mediaRecorder.setVideoEncodingBitRate(4356000);
+                mediaRecorder.setAudioEncodingBitRate(128000);
+                mediaRecorder.setVideoSize(videoFrameWidth, videoFrameHeight);
+
+                mediaRecorder.setOutputFile(getOutputMediaFile(MEDIA_TYPE_VIDEO).toString());
+                mediaRecorder.setPreviewDisplay(cameraPreviewHolder.getSurface());
+                try {
+
+                    mediaRecorder.prepare();
+                    mediaRecorder.start();
+
+                } catch (IOException e) {
+
+                    Log.e(TAG, "Error preparing the MediaRecorder");
+
+                }
+
+                Log.i(TAG, "Start");
+                findViewById(R.id.BTN___MAIN___STARTCAPTURE).setEnabled(false);
+                taskHandler.postAtTime(stopRecorder, SystemClock.uptimeMillis() + 5000);
+
                 break;
 
         }
 
         switch (v.getId()) {
+
             case R.id.BTN___MAIN___TAKESHOT:
 
                 Log.i(TAG, "TAKE SHOT requested.");
 
-                // disable the button for starting the capture
-                findViewById(R.id.BTN___MAIN___STARTCAPTURE).setEnabled(false);
+                // disabilita il pulsante
+                findViewById(R.id.BTN___MAIN___TAKESHOT).setEnabled(false);
 
                 // get an image from the camera
-
                 mCamera.takePicture(null, null, takeShotCallBack);
                 break;
 
@@ -228,21 +343,28 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
 
             } catch (FileNotFoundException e) {
+
                 Log.d(TAG, "File not found: " + e.getMessage());
+
             } catch (IOException e) {
+
                 Log.d(TAG, "Error accessing file: " + e.getMessage());
+
             }
 
             // se necessario, pone nuovamente la camera in modalità preview
             try {
+
                 startCameraPreview();
+
+                // disabilita il pulsante
+                findViewById(R.id.BTN___MAIN___TAKESHOT).setEnabled(true);
+
             } catch (Exception e) {
+
                 Log.d(TAG, "Exception raised trying to restart the camera: " + e.getMessage());
 
             }
-
-            // re-enable the button for starting the capture
-            findViewById(R.id.BTN___MAIN___STARTCAPTURE).setEnabled(true);
 
         }
     };
@@ -289,5 +411,19 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         return mediaFile;
     }
+
+    private Runnable stopRecorder = new Runnable() {
+
+        @Override
+        public void run() {
+
+            mediaRecorder.stop();
+            mCamera.lock();
+
+            Log.i(TAG, "Stop");
+            findViewById(R.id.BTN___MAIN___STARTCAPTURE).setEnabled(true);
+
+        }
+    };
 
 }
