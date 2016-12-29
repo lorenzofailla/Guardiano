@@ -2,9 +2,11 @@
     <string name="app_name">CameraControl</string>
 
     <!-- MainActivity -->
-    <string name="MainActivity_mainLabel">Camera preview:</string>
-    <string name="MainActivity_buttonStartCapture">Start Capture</string>
+    <string name="MainActivity_mainLabel">Camera preview.</string>
+    <string name="MainActivity_buttonStartVideoLoop">Start video loop</string>
+    <string name="MainActivity_buttonStopVideoLoop">Stop video loop</string>
     <string name="MainActivity_buttonTakeShot">Take Shot</string>
+    <string name="MainActivity_buttonStartService">Start Service</string>
 
     <!-- messaggi di errore -->
     <string name="ERR_surface_assignment_for_preview">Error in assignment of the surface holder for preview. :(</string>

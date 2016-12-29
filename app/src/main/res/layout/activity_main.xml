@@ -14,9 +14,10 @@
 
     <LinearLayout
         android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_margin="5dp">
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:visibility="visible">
 
         <LinearLayout
             android:orientation="vertical"
@@ -35,7 +36,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/camera_preview"
-                android:layout_gravity="center_horizontal" />
+                android:layout_gravity="center_horizontal"
+                android:visibility="gone" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -47,8 +50,7 @@
             <Button
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/MainActivity_buttonStartCapture"
-                android:id="@+id/BTN___MAIN___STARTCAPTURE"
+                android:id="@+id/BTN___MAIN___STARTVIDEOLOOP"
                 android:layout_gravity="center_horizontal" />
 
             <Button
@@ -57,7 +59,16 @@
                 android:text="@string/MainActivity_buttonTakeShot"
                 android:id="@+id/BTN___MAIN___TAKESHOT"
                 android:layout_gravity="center_horizontal" />
+
+            <Button
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/MainActivity_buttonStartService"
+                android:id="@+id/BTN___MAIN___STARTSERVICE"
+                android:layout_gravity="center_horizontal" />
+
         </LinearLayout>
+
     </LinearLayout>
 
 </LinearLayout>

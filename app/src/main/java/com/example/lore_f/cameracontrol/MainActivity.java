@@ -1,6 +1,10 @@
 package com.example.lore_f.cameracontrol;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.media.MediaRecorder;
@@ -10,6 +14,7 @@ import android.os.Handler;
 import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -28,32 +33,47 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-// TODO: 18/12/2016 forzare il layout in modalità orizzontale
-// TODO: 24/12/2016 impostare qualità del video
+public class MainActivity extends AppCompatActivity {
 
-public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, View.OnClickListener {
+    Intent mainService;
+
+    private LocalBroadcastManager broadcastManager;
 
     Camera mCamera;
     Camera.Parameters cameraParameters;
 
     SurfaceView cameraPreview;
-    SurfaceHolder cameraPreviewHolder;
-    MediaRecorder mediaRecorder;
-    Handler taskHandler;
+    //SurfaceHolder cameraPreviewHolder;
+    //MediaRecorder mediaRecorder;
+    //Handler taskHandler;
 
     private final static String TAG = "CameraControl";
 
-    public static final int MEDIA_TYPE_IMAGE = 1;
-    public static final int MEDIA_TYPE_VIDEO = 2;
+/*    public static final int MEDIA_TYPE_IMAGE = 1;
+    public static final int MEDIA_TYPE_VIDEO = 2;*/
 
     private static final int PERMISSION_RECORD_AUDIO = 1;
     private static final int PERMISSION_CAMERA = 2;
     private static final int PERMISSION_WRITE_EXTERNAL_STORAGE = 3;
 
-    private int videoFrameHeight;
-    private int videoFrameWidth;
+/*    private int videoFrameHeight;
+    private int videoFrameWidth;*/
 
-    private boolean permissionFlag = true;
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+
+        public void onReceive(Context context, Intent intent) {
+
+            switch (intent.getAction()) {
+
+                case "CAMERACONTROL___REQUEST_UI_UPDATE":
+
+                    updateUI();
+
+                    break;
+            }
+
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,46 +87,75 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         super.onResume();
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+        // avvio il servizio
+        mainService = new Intent(this, MainService.class);
+        startService(mainService);
 
-            // set the value of flag
-            permissionFlag = permissionFlag && false;
+        if (checkPermissions()) {
 
-            //ask for authorisation
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, 50);
+            // i permessi necessari sono stati ottenuti, è possibile avviare l'attività
+
+            // inzializzo i filtri per l'ascolto degli intent
+            IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction("CAMERACONTROL___REQUEST_UI_UPDATE");
+
+            // inizializzo il BroadcastManager
+            broadcastManager = LocalBroadcastManager.getInstance(this);
+
+            // registro il ricevitore di intent sul BroadcastManager registrato
+            broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
+
+            // aggiorna l'interfaccia utente
+            updateUI();
+
+            // inizializzo handlers ai drawable
+            Button videoLoopButton = (Button) findViewById(R.id.BTN___MAIN___STARTVIDEOLOOP);
+
+            videoLoopButton.setOnClickListener(
+                    new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+
+                            if (MainService.isVideoLoopRunning) {
+
+                                // il loop è avviato, manda la richiesta per fermare
+                                MainService.setVideoLoopActivity(false);
+
+                            } else {
+
+                                // il loop è fermo, manda la richiesta per avviare
+                                MainService.setVideoLoopActivity(true);
+
+                            }
+
+
+                        }
+                    }
+            );
+
+
+        } else {
+
+            // TODO: 29/dic/2016 gestire callback per richiesta permessi
+            // TODO: 29/dic/2016 gestire informazioni all'utente
+
         }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-
-            // set the value of flag
-            permissionFlag = permissionFlag && false;
-
-            //ask for authorisation
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 50);
-
-        }
-
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-
-            // set the value of flag
-            permissionFlag = permissionFlag && false;
-
-            //ask for authorisation
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, 0);
-
-        }
-
+        /*
         // inizializza il task handler
         taskHandler = new Handler();
+        */
 
-        // inizializza handlers ai drawable
-        final Button btnStartCapture = (Button) findViewById(R.id.BTN___MAIN___STARTCAPTURE);
-        final Button btnTakeShot = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
 
-        // assegna i drawable ai listener
-        btnStartCapture.setOnClickListener(this);
-        btnTakeShot.setOnClickListener(this);
+
+        /*final Button btnTakeShot = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
+        final Button btnStartService = (Button) findViewById(R.id.BTN___MAIN___STARTSERVICE);
+*/
+
+
+/*        btnTakeShot.setOnClickListener(this);
+        btnStartService.setOnClickListener(this);*/
+/*
 
         //start your camera
         if (permissionFlag) {
@@ -148,30 +197,33 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             Log.i(TAG, "Missing permissions.");
 
         }
+*/
 
     }
 
-    private void startCameraPreview() {
+    /*private void startCameraPreview() {
 
         // richiesta camera in modalità preview
         mCamera.startPreview();
 
-    }
+    }*/
 
     @Override
     protected void onPause() {
 
         super.onPause();
 
-        if (mCamera != null) {
+        /*if (mCamera != null) {
 
             mCamera.stopPreview();
 
-        }
+        }*/
+
+        stopService(mainService);
 
     }
 
-    private boolean safeCameraOpen() {
+    /*private boolean safeCameraOpen() {
 
         boolean qOpened = false;
 
@@ -192,9 +244,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         return qOpened;
 
-    }
+    }*/
 
-    private void assignCameraPreviewSurface() {
+    /*private void assignCameraPreviewSurface() {
 
         if (mCamera != null){
 
@@ -233,15 +285,15 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         }
 
-        /*
+        *//*
         Camera.Parameters cameraParameters = mCamera.getParameters();
         cameraParameters.setPreviewSize(100,100);
         mCamera.setParameters(cameraParameters);
-        */
+        *//*
 
-    }
+    }*/
 
-    private void stopCameraPreview() {
+    /*private void stopCameraPreview() {
 
         if (mCamera != null) {
 
@@ -249,38 +301,40 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         }
 
-    }
+    }*/
 
-    @Override
+    /*@Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
 
         assignCameraPreviewSurface();
         startCameraPreview();
 
-    }
+    }*/
 
-    @Override
+    /*@Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
 
         printLogInfo(String.format("i=%d, i1=%d, i2=%d", i, i1, i2));
         assignCameraPreviewSurface();
         startCameraPreview();
 
-    }
+    }*/
 
-    @Override
+    /*@Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
 
         stopCameraPreview();
 
-    }
+    }*/
 
-    @Override
+
+    /*@Override
     public void onClick(View v) {
 
         switch (v.getId()) {
-            case R.id.BTN___MAIN___STARTCAPTURE:
 
+            case R.id.BTN___MAIN___STARTVIDEOLOOP:
+*//*
                 // inizializza il MediaRecorder
                 mediaRecorder = new MediaRecorder();
 
@@ -313,14 +367,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
                 Log.i(TAG, "Start");
                 findViewById(R.id.BTN___MAIN___STARTCAPTURE).setEnabled(false);
-                taskHandler.postAtTime(stopRecorder, SystemClock.uptimeMillis() + 5000);
+                taskHandler.postAtTime(stopRecorder, SystemClock.uptimeMillis() + 5000);*//*
 
                 break;
-
-        }
-
-        switch (v.getId()) {
-
+*//*
             case R.id.BTN___MAIN___TAKESHOT:
 
                 Log.i(TAG, "TAKE SHOT requested.");
@@ -332,11 +382,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 mCamera.takePicture(null, null, takeShotCallBack);
                 break;
 
+            case R.id.BTN___MAIN___STARTSERVICE:
+
+                startService(mainService);
+                break;*//*
+
         }
 
     }
-
-    private Camera.PictureCallback takeShotCallBack = new Camera.PictureCallback() {
+*/
+    /*private Camera.PictureCallback takeShotCallBack = new Camera.PictureCallback() {
 
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
@@ -381,18 +436,20 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
 
         }
-    };
+    };*/
 
     /**
      * Create a file Uri for saving an image or video
-     */
+     *//*
     private static Uri getOutputMediaFileUri(int type) {
         return Uri.fromFile(getOutputMediaFile(type));
     }
 
+    */
+
     /**
      * Create a File for saving an image or video
-     */
+     *//*
     private static File getOutputMediaFile(int type) {
         // To be safe, you should check that the SDCard is mounted
         // using Environment.getExternalStorageState() before doing this.
@@ -424,8 +481,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
 
         return mediaFile;
-    }
+    }*/
 
+/*
     private Runnable stopRecorder = new Runnable() {
 
         @Override
@@ -443,6 +501,61 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private void printLogInfo(String message) {
 
         Log.i(TAG, message);
+
+    }*/
+    private boolean checkPermissions() {
+
+        boolean permissionFlag = true;
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+
+            // set the value of flag
+            permissionFlag = permissionFlag && false;
+
+            //ask for authorisation
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSION_CAMERA);
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+
+            // set the value of flag
+            permissionFlag = permissionFlag && false;
+
+            //ask for authorisation
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_WRITE_EXTERNAL_STORAGE);
+
+        }
+
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+
+            // set the value of flag
+            permissionFlag = permissionFlag && false;
+
+            //ask for authorisation
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSION_RECORD_AUDIO);
+
+        }
+
+        return permissionFlag;
+
+    }
+
+    private void updateUI() {
+
+        // ottiene l'handler al pulsante per avviare/fermare il loop del video
+        Button videoLoopButton = (Button) findViewById(R.id.BTN___MAIN___STARTVIDEOLOOP);
+
+        if (MainService.isVideoLoopRunning) {
+
+            // video loop is running
+            videoLoopButton.setText(R.string.MainActivity_buttonStopVideoLoop);
+
+        } else {
+
+            // video loop is not running
+            videoLoopButton.setText(R.string.MainActivity_buttonStartVideoLoop);
+        }
 
     }
 
