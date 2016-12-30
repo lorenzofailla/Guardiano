@@ -33,17 +33,17 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
 
     Intent mainService;
 
     private LocalBroadcastManager broadcastManager;
 
-    Camera mCamera;
     Camera.Parameters cameraParameters;
 
     SurfaceView cameraPreview;
-    //SurfaceHolder cameraPreviewHolder;
+    SurfaceHolder cameraPreviewHolder;
+
     //MediaRecorder mediaRecorder;
     //Handler taskHandler;
 
@@ -68,6 +68,12 @@ public class MainActivity extends AppCompatActivity {
                 case "CAMERACONTROL___REQUEST_UI_UPDATE":
 
                     updateUI();
+
+                    break;
+
+                case "CAMERACONTROL___EVENT_CAMERA_STARTED":
+
+                    assignCameraPreviewSurface();
 
                     break;
             }
@@ -98,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
             // inzializzo i filtri per l'ascolto degli intent
             IntentFilter intentFilter = new IntentFilter();
             intentFilter.addAction("CAMERACONTROL___REQUEST_UI_UPDATE");
+            intentFilter.addAction("CAMERACONTROL___EVENT_CAMERA_STARTED");
 
             // inizializzo il BroadcastManager
             broadcastManager = LocalBroadcastManager.getInstance(this);
@@ -128,10 +135,31 @@ public class MainActivity extends AppCompatActivity {
 
                             }
 
+                        }
+                    }
+            );
+
+            Button rotatePreviewButton = (Button) findViewById(R.id.BTN___MAIN___ROTATEPREVIEW);
+
+            rotatePreviewButton.setOnClickListener(
+                    new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+
+                            if(MainService.getPreviewRotation()==270){
+
+                                MainService.setPreviewRotation(0);
+
+                            } else {
+
+                                MainService.setPreviewRotation(MainService.getPreviewRotation()+90);
+
+                            }
 
                         }
                     }
             );
+
 
 
         } else {
@@ -246,11 +274,11 @@ public class MainActivity extends AppCompatActivity {
 
     }*/
 
-    /*private void assignCameraPreviewSurface() {
+    private void assignCameraPreviewSurface() {
 
-        if (mCamera != null){
+        if (MainService.mainCamera != null){
 
-            // handler a
+            // ottiene l'handler alla SurfaceView
             cameraPreview = (SurfaceView) findViewById(R.id.camera_preview);
 
             // inizializzazione dell'holder
@@ -259,39 +287,41 @@ public class MainActivity extends AppCompatActivity {
             cameraPreviewHolder.setFormat(SurfaceHolder.SURFACE_TYPE_HARDWARE);
 
             // assegnazione holder come preview display della camera
+
             try {
 
-                mCamera.setPreviewDisplay(cameraPreviewHolder);
+                MainService.mainCamera.setPreviewDisplay(cameraPreviewHolder);
+
+                Display display = getWindowManager().getDefaultDisplay();
+
+                int width = display.getWidth();
+
+                float cameraFrameRatio = (float) (MainService.mainCamera.getParameters().getPreviewSize().width) / (float) (MainService.mainCamera.getParameters().getPreviewSize().height);
+
+                Log.i(TAG, String.format("frame ratio = %.4f", cameraFrameRatio));
+
+                cameraPreviewHolder.setFixedSize(width / 2, (int) (width / 2.0 * cameraFrameRatio));
 
             } catch (IOException e) {
 
-                Log.e(getResources().getString(R.string.app_name), getResources().getString(R.string.ERR_surface_assignment_for_preview));
+                Log.e(TAG, getResources().getString(R.string.ERR_surface_assignment_for_preview));
 
             }
 
-            Display display = getWindowManager().getDefaultDisplay();
+            /*
 
-            int width = display.getWidth();
-            int height = display.getHeight();
 
-            float cameraFrameRatio = (float) (mCamera.getParameters().getPreviewSize().width) / (float) (mCamera.getParameters().getPreviewSize().height);
 
-            printLogInfo(String.format("frame ratio = %.4f", cameraFrameRatio));
-
-            int previewSurfaceWidth = width / 2;
-            int previewSurfaceHeight = width / 2;
-
-            cameraPreviewHolder.setFixedSize(width / 2, (int) (width / 2.0 * cameraFrameRatio));
-
+            */
         }
 
-        *//*
+        /*
         Camera.Parameters cameraParameters = mCamera.getParameters();
         cameraParameters.setPreviewSize(100,100);
         mCamera.setParameters(cameraParameters);
-        *//*
+        */
 
-    }*/
+    }
 
     /*private void stopCameraPreview() {
 
@@ -302,31 +332,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }*/
-
-    /*@Override
-    public void surfaceCreated(SurfaceHolder surfaceHolder) {
-
-        assignCameraPreviewSurface();
-        startCameraPreview();
-
-    }*/
-
-    /*@Override
-    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
-
-        printLogInfo(String.format("i=%d, i1=%d, i2=%d", i, i1, i2));
-        assignCameraPreviewSurface();
-        startCameraPreview();
-
-    }*/
-
-    /*@Override
-    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-
-        stopCameraPreview();
-
-    }*/
-
 
     /*@Override
     public void onClick(View v) {
@@ -559,4 +564,18 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {
+
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+
+    }
 }

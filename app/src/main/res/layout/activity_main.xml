@@ -36,8 +36,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/camera_preview"
-                android:layout_gravity="center_horizontal"
-                android:visibility="gone" />
+                android:layout_gravity="center_horizontal"/>
 
         </LinearLayout>
 
@@ -63,8 +62,8 @@
             <Button
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/MainActivity_buttonStartService"
-                android:id="@+id/BTN___MAIN___STARTSERVICE"
+                android:text="@string/MainActivity_buttonRotatePreviewLeft"
+                android:id="@+id/BTN___MAIN___ROTATEPREVIEW"
                 android:layout_gravity="center_horizontal" />
 
         </LinearLayout>

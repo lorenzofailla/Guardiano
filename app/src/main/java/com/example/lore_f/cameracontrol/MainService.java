@@ -12,6 +12,7 @@ import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.widget.Toast;
 
 /**
  * Created by 105053228 on 28/dic/2016.
@@ -19,13 +20,29 @@ import android.util.Log;
 
 public class MainService extends Service {
 
-    private Camera mainCamera;
+    public static Camera mainCamera;
 
     private static final String TAG = "_MainService";
 
     private static LocalBroadcastManager broadcastManager;
 
     public static boolean isVideoLoopRunning = false;
+
+    public static int getPreviewRotation() {
+        return previewRotation;
+    }
+
+    public static void setPreviewRotation(int previewRotation) {
+        MainService.previewRotation = previewRotation;
+
+        if(mainCamera!=null) {
+
+            mainCamera.setDisplayOrientation(previewRotation);
+        }
+
+    }
+
+    public static int previewRotation=0;
 
     @Override
     public void onCreate() {
@@ -44,6 +61,16 @@ public class MainService extends Service {
         // inizializzo il BroadcastManager
         broadcastManager = LocalBroadcastManager.getInstance(this);
         //local_broadcastmanager.registerReceiver(broadcast_receiver, intent_filter);
+
+        if(safeCameraOpen()){
+
+            Log.i(TAG, "Successfully opened camera");
+            Toast.makeText(MainService.this, "Successfully opened camera.", Toast.LENGTH_SHORT).show();
+            mainCamera.startPreview();
+
+            broadcastManager.sendBroadcast(new Intent("CAMERACONTROL___EVENT_CAMERA_STARTED"));
+
+        }
     }
 
     @Override
@@ -85,12 +112,22 @@ public class MainService extends Service {
     @Override
     public void onDestroy() {
 
+        releaseCamera();
+
         // TODO: 29/dic/2016 rilascia la camera
         stopForeground(true);
 
     }
 
+    private void releaseCamera() {
 
+        if (mainCamera!=null){
+
+            mainCamera.stopPreview();
+            mainCamera.release();
+        }
+
+    }
     private boolean safeCameraOpen() {
 
         boolean qOpened = false;
