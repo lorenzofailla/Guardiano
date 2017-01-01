@@ -7,12 +7,22 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.Camera;
+import android.media.MediaRecorder;
+import android.net.Uri;
+import android.os.Environment;
+import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created by 105053228 on 28/dic/2016.
@@ -20,13 +30,18 @@ import android.widget.Toast;
 
 public class MainService extends Service {
 
-    public static Camera mainCamera;
+    public static Camera mainCamera=null;
+    public static MediaRecorder mediaRecorder;
+    private static Handler taskHandler;
+    private static LocalBroadcastManager broadcastManager;
 
     private static final String TAG = "_MainService";
 
-    private static LocalBroadcastManager broadcastManager;
-
     public static boolean isVideoLoopRunning = false;
+    public static long standardLoopDuration = 50000;
+
+    private static final int MEDIA_TYPE_IMAGE = 1;
+    private static final int MEDIA_TYPE_VIDEO = 2;
 
     public static int getPreviewRotation() {
         return previewRotation;
@@ -62,6 +77,9 @@ public class MainService extends Service {
         broadcastManager = LocalBroadcastManager.getInstance(this);
         //local_broadcastmanager.registerReceiver(broadcast_receiver, intent_filter);
 
+        // inizializzo taskHandler
+        taskHandler = new Handler();
+
         if(safeCameraOpen()){
 
             Log.i(TAG, "Successfully opened camera");
@@ -71,6 +89,7 @@ public class MainService extends Service {
             broadcastManager.sendBroadcast(new Intent("CAMERACONTROL___EVENT_CAMERA_STARTED"));
 
         }
+
     }
 
     @Override
@@ -95,8 +114,6 @@ public class MainService extends Service {
         // start the service in foreground
         startForeground(1, notification);
 
-        // TODO: 29/dic/2016 apre la camera
-
         // If we get killed, after returning from here, restart
         return START_STICKY;
 
@@ -113,8 +130,6 @@ public class MainService extends Service {
     public void onDestroy() {
 
         releaseCamera();
-
-        // TODO: 29/dic/2016 rilascia la camera
         stopForeground(true);
 
     }
@@ -125,6 +140,8 @@ public class MainService extends Service {
 
             mainCamera.stopPreview();
             mainCamera.release();
+            mainCamera=null;
+
         }
 
     }
@@ -152,9 +169,121 @@ public class MainService extends Service {
 
     public static void setVideoLoopActivity(boolean status) {
 
-        isVideoLoopRunning = status;
+        if(status){
+
+
+            // - avvia il loop di registrazione video
+            // inizializza il MediaRecorder
+            mediaRecorder = new MediaRecorder();
+
+            // sblocca la camera
+            mainCamera.unlock();
+
+            // configura il MediaRecorder
+            mediaRecorder.setCamera(mainCamera);
+            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+            mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+            mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+            mediaRecorder.setVideoEncodingBitRate(4356000);
+            mediaRecorder.setAudioEncodingBitRate(128000);
+            /*mediaRecorder.setVideoSize(videoFrameWidth, videoFrameHeight);*/
+            mediaRecorder.setOutputFile(getOutputMediaFile(MEDIA_TYPE_VIDEO).toString());
+            /*mediaRecorder.setPreviewDisplay(cameraPreviewHolder.getSurface());*/
+
+            try {
+
+                mediaRecorder.prepare();
+                mediaRecorder.start();
+
+                Log.i(TAG, "Video loop started");
+
+                isVideoLoopRunning = true;
+
+            } catch (IOException e) {
+
+                Log.e(TAG, "Error preparing the MediaRecorder");
+
+            }
+
+            // imposta il valore del flag a true
+            isVideoLoopRunning = true;
+
+            // richiede il blocco video
+            taskHandler.postAtTime(stopRecorder, SystemClock.uptimeMillis() + standardLoopDuration);
+
+        } else {
+
+            // ferma il loop di registrazione video
+            isVideoLoopRunning = false;
+
+        }
+
         broadcastManager.sendBroadcast(new Intent("CAMERACONTROL___REQUEST_UI_UPDATE"));
 
     }
+
+    /**
+     * Create a file Uri for saving an image or video
+     */
+    private static Uri getOutputMediaFileUri(int type) {
+        return Uri.fromFile(getOutputMediaFile(type));
+    }
+
+
+
+    /**
+     * Create a File for saving an image or video
+     */
+    private static File getOutputMediaFile(int type) {
+        // To be safe, you should check that the SDCard is mounted
+        // using Environment.getExternalStorageState() before doing this.
+
+        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES), "MyCameraApp");
+        // This location works best if you want the created images to be shared
+        // between applications and persist after your app has been uninstalled.
+
+        // Create the storage directory if it does not exist
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                Log.d("MyCameraApp", "failed to create directory");
+                return null;
+            }
+        }
+
+        // Create a media file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        File mediaFile;
+        if (type == MEDIA_TYPE_IMAGE) {
+            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
+                    "IMG_" + timeStamp + ".jpg");
+        } else if (type == MEDIA_TYPE_VIDEO) {
+            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
+                    "VID_" + timeStamp + ".mp4");
+        } else {
+            return null;
+        }
+
+        return mediaFile;
+    }
+
+    private static Runnable stopRecorder = new Runnable() {
+
+        @Override
+        public void run() {
+
+            // ferma il mediarecorder e richiama il lock della camera
+            mediaRecorder.stop();
+            mainCamera.lock();
+
+            if(isVideoLoopRunning) {
+                setVideoLoopActivity(false);
+            }
+
+        }
+
+    };
 
 }

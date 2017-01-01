@@ -1,6 +1,7 @@
 package com.example.lore_f.cameracontrol;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -19,10 +20,12 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -39,18 +42,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     private LocalBroadcastManager broadcastManager;
 
-    Camera.Parameters cameraParameters;
+    private SurfaceView cameraPreview;
+    private SurfaceHolder cameraPreviewHolder;
 
-    SurfaceView cameraPreview;
-    SurfaceHolder cameraPreviewHolder;
-
-    //MediaRecorder mediaRecorder;
-    //Handler taskHandler;
-
-    private final static String TAG = "CameraControl";
-
-/*    public static final int MEDIA_TYPE_IMAGE = 1;
-    public static final int MEDIA_TYPE_VIDEO = 2;*/
+    private final static String TAG = "_MainActivity";
+    private final static String MAIN_SERVICE_NAME = "com.example.lore_f.cameracontrol.MainService";
 
     private static final int PERMISSION_RECORD_AUDIO = 1;
     private static final int PERMISSION_CAMERA = 2;
@@ -63,6 +59,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         public void onReceive(Context context, Intent intent) {
 
+            Log.i(TAG, "Received intent: "+intent.getAction());
+
             switch (intent.getAction()) {
 
                 case "CAMERACONTROL___REQUEST_UI_UPDATE":
@@ -72,6 +70,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     break;
 
                 case "CAMERACONTROL___EVENT_CAMERA_STARTED":
+
 
                     assignCameraPreviewSurface();
 
@@ -93,13 +92,22 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         super.onResume();
 
-        // avvio il servizio
-        mainService = new Intent(this, MainService.class);
-        startService(mainService);
-
         if (checkPermissions()) {
 
             // i permessi necessari sono stati ottenuti, è possibile avviare l'attività
+
+            // avvio il servizio
+            mainService = new Intent(this, MainService.class);
+            if (!isMainServiceRunning()) {
+
+                startService(mainService);
+
+            } else {
+
+                assignCameraPreviewSurface();
+
+            }
+
 
             // inzializzo i filtri per l'ascolto degli intent
             IntentFilter intentFilter = new IntentFilter();
@@ -123,44 +131,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                         @Override
                         public void onClick(View v) {
 
-                            if (MainService.isVideoLoopRunning) {
+                           // il loop è avviato, manda la richiesta per fermare
+                            MainService.setVideoLoopActivity(!MainService.isVideoLoopRunning);
 
-                                // il loop è avviato, manda la richiesta per fermare
-                                MainService.setVideoLoopActivity(false);
-
-                            } else {
-
-                                // il loop è fermo, manda la richiesta per avviare
-                                MainService.setVideoLoopActivity(true);
-
-                            }
 
                         }
                     }
             );
-
-            Button rotatePreviewButton = (Button) findViewById(R.id.BTN___MAIN___ROTATEPREVIEW);
-
-            rotatePreviewButton.setOnClickListener(
-                    new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-
-                            if(MainService.getPreviewRotation()==270){
-
-                                MainService.setPreviewRotation(0);
-
-                            } else {
-
-                                MainService.setPreviewRotation(MainService.getPreviewRotation()+90);
-
-                            }
-
-                        }
-                    }
-            );
-
-
 
         } else {
 
@@ -178,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         /*final Button btnTakeShot = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
         final Button btnStartService = (Button) findViewById(R.id.BTN___MAIN___STARTSERVICE);
-*/
+        */
 
 
 /*        btnTakeShot.setOnClickListener(this);
@@ -241,97 +218,64 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         super.onPause();
 
-        /*if (mCamera != null) {
+        if(!(MainService.isVideoLoopRunning)){
 
-            mCamera.stopPreview();
-
-        }*/
-
-        stopService(mainService);
-
-    }
-
-    /*private boolean safeCameraOpen() {
-
-        boolean qOpened = false;
-
-        try {
-
-            mCamera = Camera.open();
-            qOpened = (mCamera != null);
-            Log.i(getString(R.string.app_name), "connected to Camera");
-
-        } catch (Exception e) {
-
-            Log.e(getString(R.string.app_name), "failed to open Camera");
-            Log.e(getString(R.string.app_name), e.getMessage());
-
-            e.printStackTrace();
+            stopService(mainService);
 
         }
 
-        return qOpened;
+        broadcastManager.unregisterReceiver(broadcastReceiver);
 
-    }*/
+    }
 
     private void assignCameraPreviewSurface() {
 
-        if (MainService.mainCamera != null){
+        if (MainService.mainCamera != null) {
 
             // ottiene l'handler alla SurfaceView
-            cameraPreview = (SurfaceView) findViewById(R.id.camera_preview);
+            cameraPreview = (SurfaceView) findViewById(R.id.SFV___MAIN___CAMERA_PREVIEW);
 
             // inizializzazione dell'holder
             cameraPreviewHolder = cameraPreview.getHolder();
             cameraPreviewHolder.addCallback(this);
             cameraPreviewHolder.setFormat(SurfaceHolder.SURFACE_TYPE_HARDWARE);
 
-            // assegnazione holder come preview display della camera
+            // - ridimensiona l'holder per occupare non più di metà schermo
+            // ottiene le dimensioni del display
+            int width = getWindowManager().getDefaultDisplay().getWidth();
+            // ottiene l'indice di rotazione del display
+            int rotation = getWindowManager().getDefaultDisplay().getRotation();
+            Log.i(TAG, String.format("Display rotation = %d", rotation));
 
-            try {
-
-                MainService.mainCamera.setPreviewDisplay(cameraPreviewHolder);
-
-                Display display = getWindowManager().getDefaultDisplay();
-
-                int width = display.getWidth();
-
-                float cameraFrameRatio = (float) (MainService.mainCamera.getParameters().getPreviewSize().width) / (float) (MainService.mainCamera.getParameters().getPreviewSize().height);
-
-                Log.i(TAG, String.format("frame ratio = %.4f", cameraFrameRatio));
-
-                cameraPreviewHolder.setFixedSize(width / 2, (int) (width / 2.0 * cameraFrameRatio));
-
-            } catch (IOException e) {
-
-                Log.e(TAG, getResources().getString(R.string.ERR_surface_assignment_for_preview));
-
+            // calcola la rotazione in gradi del display
+            int displayOrientationDegrees=0;
+            switch(rotation){
+                case Surface.ROTATION_0:
+                    displayOrientationDegrees=90;
+                    break;
+                case Surface.ROTATION_90:
+                    displayOrientationDegrees=0;
+                    break;
+                case Surface.ROTATION_180:
+                    displayOrientationDegrees=270;
+                    break;
+                case Surface.ROTATION_270:
+                    displayOrientationDegrees=180;
+                    break;
             }
 
-            /*
+            // imposta l'orientamento del display della preview
+            MainService.mainCamera.setDisplayOrientation(displayOrientationDegrees);
 
+            // calcola il rapporto d'aspetto del fram del preview
+            float cameraFrameRatio = (float) (MainService.mainCamera.getParameters().getPreviewSize().width) / (float) (MainService.mainCamera.getParameters().getPreviewSize().height);
+            Log.i(TAG, String.format("frame ratio = %.4f", cameraFrameRatio));
 
+            // ridimensiona l'holder per tenere il rapporto d'aspetto e occupare meno di metà schermo
+            cameraPreviewHolder.setFixedSize(width / 2, (int) (width / 2.0 * cameraFrameRatio));
 
-            */
         }
-
-        /*
-        Camera.Parameters cameraParameters = mCamera.getParameters();
-        cameraParameters.setPreviewSize(100,100);
-        mCamera.setParameters(cameraParameters);
-        */
-
     }
-
-    /*private void stopCameraPreview() {
-
-        if (mCamera != null) {
-
-            mCamera.stopPreview();
-
-        }
-
-    }*/
 
     /*@Override
     public void onClick(View v) {
@@ -340,39 +284,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
             case R.id.BTN___MAIN___STARTVIDEOLOOP:
 *//*
-                // inizializza il MediaRecorder
-                mediaRecorder = new MediaRecorder();
-
-                // sblocca la camera
-                mCamera.unlock();
-
-                // configura il MediaRecorder
-                mediaRecorder.setCamera(mCamera);
-                mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
-                mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-                mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-                mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-                mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-                mediaRecorder.setVideoEncodingBitRate(4356000);
-                mediaRecorder.setAudioEncodingBitRate(128000);
-                mediaRecorder.setVideoSize(videoFrameWidth, videoFrameHeight);
-
-                mediaRecorder.setOutputFile(getOutputMediaFile(MEDIA_TYPE_VIDEO).toString());
-                mediaRecorder.setPreviewDisplay(cameraPreviewHolder.getSurface());
-                try {
-
-                    mediaRecorder.prepare();
-                    mediaRecorder.start();
-
-                } catch (IOException e) {
-
-                    Log.e(TAG, "Error preparing the MediaRecorder");
-
-                }
-
-                Log.i(TAG, "Start");
-                findViewById(R.id.BTN___MAIN___STARTCAPTURE).setEnabled(false);
-                taskHandler.postAtTime(stopRecorder, SystemClock.uptimeMillis() + 5000);*//*
 
                 break;
 *//*
@@ -443,65 +354,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
     };*/
 
-    /**
-     * Create a file Uri for saving an image or video
-     *//*
-    private static Uri getOutputMediaFileUri(int type) {
-        return Uri.fromFile(getOutputMediaFile(type));
-    }
 
-    */
-
-    /**
-     * Create a File for saving an image or video
-     *//*
-    private static File getOutputMediaFile(int type) {
-        // To be safe, you should check that the SDCard is mounted
-        // using Environment.getExternalStorageState() before doing this.
-
-        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES), "MyCameraApp");
-        // This location works best if you want the created images to be shared
-        // between applications and persist after your app has been uninstalled.
-
-        // Create the storage directory if it does not exist
-        if (!mediaStorageDir.exists()) {
-            if (!mediaStorageDir.mkdirs()) {
-                Log.d("MyCameraApp", "failed to create directory");
-                return null;
-            }
-        }
-
-        // Create a media file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        File mediaFile;
-        if (type == MEDIA_TYPE_IMAGE) {
-            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "IMG_" + timeStamp + ".jpg");
-        } else if (type == MEDIA_TYPE_VIDEO) {
-            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "VID_" + timeStamp + ".mp4");
-        } else {
-            return null;
-        }
-
-        return mediaFile;
-    }*/
 
 /*
-    private Runnable stopRecorder = new Runnable() {
 
-        @Override
-        public void run() {
-
-            mediaRecorder.stop();
-            mCamera.lock();
-
-            Log.i(TAG, "Stop");
-            findViewById(R.id.BTN___MAIN___STARTCAPTURE).setEnabled(true);
-
-        }
-    };
 
     private void printLogInfo(String message) {
 
@@ -560,22 +416,85 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
             // video loop is not running
             videoLoopButton.setText(R.string.MainActivity_buttonStartVideoLoop);
+
         }
 
+        updateStatusTextView();
+
+    }
+
+    private void updateStatusTextView(){
+
+        TextView statusTextView = (TextView) findViewById(R.id.TXV___MAIN___STATUS);
+        String textViewMessage;
+
+        if(MainService.isVideoLoopRunning){
+
+            textViewMessage=getString(R.string.MainActivity_videoLoopRunning);
+
+        } else {
+
+            textViewMessage=getString(R.string.MainActivity_videoLoopPaused);
+
+        }
+
+        statusTextView.setText(textViewMessage);
     }
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
+
+        Log.i(TAG, "Running callback: surfaceCreated");
+
+         if(MainService.mainCamera!=null) {
+
+             try {
+
+                 MainService.mainCamera.setPreviewDisplay(holder);
+
+             } catch (IOException e) {
+
+                 e.printStackTrace();
+
+             }
+
+         }
 
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
 
+        Log.i(TAG, "Running callback: surfaceChanged");
+
+        if(MainService.mainCamera!=null) {
+
+            try {
+
+                MainService.mainCamera.setPreviewDisplay(holder);
+
+            } catch (IOException e) {
+
+                e.printStackTrace();
+
+            }
+
+        }
     }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
 
     }
+
+    private boolean isMainServiceRunning() {
+        ActivityManager manager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (MAIN_SERVICE_NAME.equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

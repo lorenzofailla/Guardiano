@@ -19,6 +19,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private SurfaceHolder cameraPreviewHolder;
     private Camera assignedCamera;
 
+    private static final String TAG = "_CameraPreview";
+
     CameraPreview (Context context){
 
         super(context);
@@ -93,7 +95,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
             } catch (IOException e) {
 
-                Log.e(getResources().getString(R.string.app_name), getResources().getString(R.string.ERR_surface_assignment_for_preview));
+                Log.e(TAG, "Error assigning surface holder to camera preview");
 
             }
 

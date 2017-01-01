@@ -7,10 +7,11 @@
     <string name="MainActivity_buttonStopVideoLoop">Stop video loop</string>
     <string name="MainActivity_buttonTakeShot">Take Shot</string>
     <string name="MainActivity_buttonStartService">Start Service</string>
-    <string name="MainActivity_buttonRotatePreviewLeft">-</string>
-    <string name="MainActivity_buttonRotatePreviewRight">+</string>
+    <string name="MainActivity_buttonRotatePreviewLeft">Rotate preview</string>
+
+    <string name="MainActivity_videoLoopPaused">Video loop paused.</string>
+    <string name="MainActivity_videoLoopRunning">Video loop running.</string>
 
     <!-- messaggi di errore -->
-    <string name="ERR_surface_assignment_for_preview">Error in assignment of the surface holder for preview. :(</string>
 
 </resources>
