@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">CameraControl</string>
+    <string name="app_name">Guardiano</string>
 
     <!-- MainActivity -->
     <string name="MainActivity_mainLabel">Camera preview.</string>
@@ -12,6 +12,12 @@
     <string name="MainActivity_videoLoopPaused">Video loop paused.</string>
     <string name="MainActivity_videoLoopRunning">Video loop running.</string>
 
+    <!-- MainActivity_Menu -->
+    <string name="MainActivity_Menu_signOut">Sign out</string>
+
     <!-- messaggi di errore -->
+
+    <!-- SignInActivity -->
+    <string name="SignInActivity_signIn">Sign in</string>
 
 </resources>

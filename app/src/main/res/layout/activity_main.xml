@@ -6,12 +6,6 @@
     android:layout_height="fill_parent"
     >
 
-    <!--
-    <com.example.lore_f.cameracontrol.CameraPreview
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content" />
-    -->
-
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="wrap_content"
