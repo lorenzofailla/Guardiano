@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "656531250900-be6qbsq8k012uo3ee5bqovv789s11j5h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.apps.lore_f.guardiano",
+            "certificate_hash": "68353AB9E315E7A05FCE03F6662D47405BB6D2E2"
+          }
+        },
+        {
           "client_id": "656531250900-bau07a14phl34vbjssbgfe8k861vujf9.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

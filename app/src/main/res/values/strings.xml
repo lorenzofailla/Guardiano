@@ -26,4 +26,7 @@
     <string name="PermissionsRequestActivity_permissionRecordAudio">Record audio</string>
     <string name="PermissionsRequestActivity_permissionWriteExternalStorage">Write external storage</string>
 
+    <string name="PermissionsRequestActivity_permissionGranted">GRANTED</string>
+    <string name="PermissionsRequestActivity_permissionDenied">DENIED</string>
+
 </resources>

@@ -68,17 +68,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 /*    private int videoFrameHeight;
     private int videoFrameWidth;*/
 
-    private class WaitForPermissions implements Runnable{
-
-        @Override
-        public void run() {
-
-        }
-
-    }
-
-    
-
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
 
         public void onReceive(Context context, Intent intent) {
@@ -158,7 +147,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         altrimenti inizializza i controlli
          */
 
-        if(!checkPermissions()){
+        if(!SharedFunctions.checkPermissions(this)){
             //
             //
             startActivity(new Intent(this, PermissionsRequestActivity.class));
@@ -453,16 +442,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         Log.i(TAG, message);
 
     }*/
-
-    private boolean checkPermissions() {
-
-        return (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) &&
-                (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) &&
-                (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) &&
-                (ContextCompat.checkSelfPermission(this, Manifest.permission.INTERNET) == PackageManager.PERMISSION_GRANTED);
-
-    }
-
 
     private void updateUI() {
 

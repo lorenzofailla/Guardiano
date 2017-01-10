@@ -111,13 +111,15 @@ public class SignInActivity extends AppCompatActivity implements
             case RC_SIGN_IN:
 
                 GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
+
                 if(result.isSuccess()){
                     GoogleSignInAccount account = result.getSignInAccount();
                     firebaseAuthWithGooogle(account);
 
                 } else {
 
-                    Log.e(TAG, "Google sign in fallito");
+                    Log.e(TAG, "Google sign in fallito.");
+                    Log.e(TAG, result.getStatus().toString());
 
                 }
 
