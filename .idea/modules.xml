@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/CameraControl.iml" filepath="$PROJECT_DIR$/CameraControl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Guardiano.iml" filepath="$PROJECT_DIR$/Guardiano.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>

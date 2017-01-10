@@ -20,4 +20,10 @@
     <!-- SignInActivity -->
     <string name="SignInActivity_signIn">Sign in</string>
 
+    <!-- PermissionsRequestActivity -->
+    <string name="PermissionsRequestActivity_permissionInternet">Internet access</string>
+    <string name="PermissionsRequestActivity_permissionCamera">Camera access</string>
+    <string name="PermissionsRequestActivity_permissionRecordAudio">Record audio</string>
+    <string name="PermissionsRequestActivity_permissionWriteExternalStorage">Write external storage</string>
+
 </resources>
