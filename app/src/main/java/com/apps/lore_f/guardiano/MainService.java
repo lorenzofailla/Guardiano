@@ -16,6 +16,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.SystemClock;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
@@ -23,14 +24,32 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 
 /**
  * Created by Lorenzo Failla on 28/dic/2016.
@@ -43,17 +62,28 @@ public class MainService extends Service {
     private static Handler taskHandler;
     private static LocalBroadcastManager broadcastManager;
 
-    private static final String TAG = "_MainService";
+    // Firebase
+    public static FirebaseAuth firebaseAuth;
+    public static FirebaseUser firebaseUser;
+
+    // Firebase database
+    public static DatabaseReference databaseReference;
+    public static final String PICTURES_TAKEN_CHILD = "pictures_taken";
+
+    // Firebase storage
+    public static StorageReference storageReference;
+    public static final String STORAGE_BUCKET="gs://guardiano-2c543.appspot.com/";
+    private static UploadTask uploadTask;
+
+    //private static final String MESSAGE_SENT_EVENT = "message_sent";
+
+    private static String TAG = "_MainService";
 
     public static boolean isVideoLoopRunning = false;
     public static long standardLoopDuration = 50000;
 
     private static final int MEDIA_TYPE_IMAGE = 1;
     private static final int MEDIA_TYPE_VIDEO = 2;
-
-    private ServerSocket serverSocket;
-
-    static final int SERVER_SOCKET_PORT = 6000;
 
     public static int getPreviewRotation() {
         return previewRotation;
@@ -71,83 +101,6 @@ public class MainService extends Service {
     }
 
     public static int previewRotation=0;
-
-    Thread serverThread=null;
-
-    class ServerThread implements Runnable {
-
-        public void run() {
-
-            Socket socket = null;
-
-            try {
-
-                serverSocket = new ServerSocket(SERVER_SOCKET_PORT);
-                Log.i(TAG, "Server socket created ->" + serverSocket.getLocalSocketAddress().toString()+" ("+serverSocket.getInetAddress().toString()+")");
-
-            } catch (IOException e) {
-
-                e.printStackTrace();
-
-            }
-
-            while (!Thread.currentThread().isInterrupted()) {
-
-                try {
-
-                    socket = serverSocket.accept();
-                    Log.i(TAG, "Server socket initialized to listening");
-                    CommunicationThread commThread = new CommunicationThread(socket);
-                    new Thread(commThread).start();
-
-                } catch (IOException e) {
-
-                    e.printStackTrace();
-
-                }
-            }
-        }
-    }
-
-    class CommunicationThread implements Runnable {
-
-        private Socket clientSocket;
-
-        private BufferedReader input;
-
-        public CommunicationThread(Socket clientSocket) {
-
-            this.clientSocket = clientSocket;
-
-            try {
-
-                this.input = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        public void run() {
-
-            while (!Thread.currentThread().isInterrupted()) {
-
-                try {
-
-                    String read = input.readLine();
-
-                    
-
-                } catch (IOException e) {
-
-                    e.printStackTrace();
-
-                }
-            }
-        }
-
-    }
-
 
     @Override
     public void onCreate() {
@@ -170,6 +123,12 @@ public class MainService extends Service {
         // inizializzo taskHandler
         taskHandler = new Handler();
 
+        // inizializzo il database di Firebase
+        databaseReference = FirebaseDatabase.getInstance().getReference();
+
+        // inizializzo lo starage di Firebase
+        storageReference = FirebaseStorage.getInstance().getReferenceFromUrl(STORAGE_BUCKET);
+
         if(safeCameraOpen()){
 
             Log.i(TAG, "Successfully opened camera");
@@ -180,13 +139,7 @@ public class MainService extends Service {
 
         }
 
-        serverThread = new Thread(new ServerThread());
-        serverThread.start();
-
     }
-
-
-
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -226,12 +179,6 @@ public class MainService extends Service {
     public void onDestroy() {
 
         releaseCamera();
-
-        try {
-            serverSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
         stopForeground(true);
 
@@ -384,6 +331,76 @@ public class MainService extends Service {
             if(isVideoLoopRunning) {
                 setVideoLoopActivity(false);
             }
+
+        }
+
+    };
+
+
+    public static void takeShot(){
+            /*
+        cattura un fotogramma dalla camera
+            */
+
+        if(mainCamera!=null){
+
+            mainCamera.takePicture(null, null, takeShotCallback);
+
+        }
+
+    }
+
+    private static Camera.PictureCallback takeShotCallback = new Camera.PictureCallback() {
+
+        @Override
+        public void onPictureTaken(byte[] data, Camera camera) {
+
+            File pictureFile;
+            pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
+            if (pictureFile == null) {
+                Log.d(TAG, "Error creating media file, check storage permissions.");
+                return;
+            }
+
+            try {
+
+                FileOutputStream fos = new FileOutputStream(pictureFile);
+                fos.write(data);
+                fos.close();
+
+                Log.i(TAG, "Successfully wrote file " + pictureFile.getAbsolutePath());
+
+
+            } catch (FileNotFoundException e) {
+
+                Log.d(TAG, "File not found: " + e.getMessage());
+
+            } catch (IOException e) {
+
+                Log.d(TAG, "Error accessing file: " + e.getMessage());
+
+            }
+
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+            String pictureFilename = "IMG_" + timeStamp + ".jpg";
+
+            StorageReference pictureToBeUploaded=storageReference.child("pictures_taken/" + firebaseUser.getUid()+"/"+pictureFilename);
+            uploadTask = pictureToBeUploaded.putBytes(data);
+
+            uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                    // Handle successful uploads on complete
+                    Uri downloadUrl = taskSnapshot.getMetadata().getDownloadUrl();
+
+                    PictureTakenMessage pictureTakenMessage = new PictureTakenMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()),"Picture taken!", downloadUrl.toString());
+                    databaseReference.child(PICTURES_TAKEN_CHILD).child(firebaseUser.getUid()).push().setValue(pictureTakenMessage);
+
+                }
+            });
+
+            camera.startPreview();
+            broadcastManager.sendBroadcast(new Intent("CAMERACONTROL___SHOT_TAKEN"));
 
         }
 

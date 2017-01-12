@@ -44,6 +44,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import static com.apps.lore_f.guardiano.MainService.firebaseAuth;
+import static com.apps.lore_f.guardiano.MainService.firebaseUser;
+
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
 
     Intent mainService;
@@ -56,17 +59,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private final static String TAG = "_MainActivity";
     private final static String MAIN_SERVICE_NAME = "com.apps.lore_f.guardiano.MainService";
 
-
-
-    private FirebaseAuth firebaseAuth;
-    private FirebaseUser firebaseUser;
-
     private GoogleApiClient googleApiClient;
-
-    private boolean permissionsGranted=false;
-
-/*    private int videoFrameHeight;
-    private int videoFrameWidth;*/
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
 
@@ -84,8 +77,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
                 case "CAMERACONTROL___EVENT_CAMERA_STARTED":
 
-
                     assignCameraPreviewSurface();
+
+                    break;
+
+                case "CAMERACONTROL___SHOT_TAKEN":
+
+                    Button buttonTakeShot = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
+                    buttonTakeShot.setEnabled(true);
 
                     break;
             }
@@ -126,11 +125,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         // ottiene l'user corrente
         firebaseUser = firebaseAuth.getCurrentUser();
 
-        /*
-        Controlla che sia stata effettuata l'autenticazione,
-        altrimenti termina l'attività corrente e apre la SignInActivity
-        */
-
         if(firebaseUser==null){
             // autenticazione non effettuata
 
@@ -155,6 +149,21 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             return;
 
         }
+
+        // inizializzo handlers ai drawable
+        Button takeShotButton = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
+        takeShotButton.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+
+                        // il loop è avviato, manda la richiesta per fermare
+                        v.setEnabled(false);
+                        MainService.takeShot();
+
+                    }
+                }
+        );
 
         // inizializzo handlers ai drawable
         Button videoLoopButton = (Button) findViewById(R.id.BTN___MAIN___STARTVIDEOLOOP);
@@ -185,50 +194,32 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         super.onResume();
 
-        if (permissionsGranted) {
+        // avvio il servizio
+        mainService = new Intent(this, MainService.class);
+        if (!isMainServiceRunning()) {
 
-            // i permessi necessari sono stati ottenuti, è possibile avviare l'attività
-
-            // avvio il servizio
-            mainService = new Intent(this, MainService.class);
-            if (!isMainServiceRunning()) {
-
-                startService(mainService);
-
-            } else {
-
-                assignCameraPreviewSurface();
-
-            }
-
-
-            // inzializzo i filtri per l'ascolto degli intent
-            IntentFilter intentFilter = new IntentFilter();
-            intentFilter.addAction("CAMERACONTROL___REQUEST_UI_UPDATE");
-            intentFilter.addAction("CAMERACONTROL___EVENT_CAMERA_STARTED");
-
-            // inizializzo il BroadcastManager
-            broadcastManager = LocalBroadcastManager.getInstance(this);
-
-            // registro il ricevitore di intent sul BroadcastManager registrato
-            broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
-
-            // aggiorna l'interfaccia utente
-            updateUI();
-
+            startService(mainService);
 
         } else {
 
-            // TODO: 29/dic/2016 gestire callback per richiesta permessi
-            // TODO: 29/dic/2016 gestire informazioni all'utente
+            assignCameraPreviewSurface();
 
         }
 
-        /*
-        // inizializza il task handler
-        taskHandler = new Handler();
-        */
+        // inzializzo i filtri per l'ascolto degli intent
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction("CAMERACONTROL___REQUEST_UI_UPDATE");
+        intentFilter.addAction("CAMERACONTROL___EVENT_CAMERA_STARTED");
+        intentFilter.addAction("CAMERACONTROL___SHOT_TAKEN");
 
+        // inizializzo il BroadcastManager
+        broadcastManager = LocalBroadcastManager.getInstance(this);
+
+        // registro il ricevitore di intent sul BroadcastManager registrato
+        broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
+
+        // aggiorna l'interfaccia utente
+        updateUI();
 
 
         /*final Button btnTakeShot = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
