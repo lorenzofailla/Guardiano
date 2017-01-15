@@ -29,4 +29,8 @@
     <string name="PermissionsRequestActivity_permissionGranted">GRANTED</string>
     <string name="PermissionsRequestActivity_permissionDenied">DENIED</string>
 
+    <!-- Comandi da client -->
+    <string name="Incomingcommands___TAKE_SHOT" translatable="false">COMMAND_FROM_CLIENT:::TAKE_PICTURE</string>
+
+
 </resources>
