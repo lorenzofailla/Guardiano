@@ -35,6 +35,8 @@ import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -116,9 +118,22 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
 
+        /*
+        controlla che i permessi siano stati dati.
+        in assenza dei permessi, lancia l'activity per richiedere i permessi
+        altrimenti inizializza i controlli
+         */
+
+        if(!SharedFunctions.checkPermissions(this)){
+            //
+            //
+            startActivity(new Intent(this, PermissionsRequestActivity.class));
+            finish();
+            return;
+
+        }
         // inizializza il FirebaseAuth
         firebaseAuth=FirebaseAuth.getInstance();
 
@@ -135,20 +150,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         }
 
-        /*
-        controlla che i permessi siano stati dati.
-        in assenza dei permessi, lancia l'activity per richiedere i permessi
-        altrimenti inizializza i controlli
-         */
-
-        if(!SharedFunctions.checkPermissions(this)){
-            //
-            //
-            startActivity(new Intent(this, PermissionsRequestActivity.class));
-            finish();
-            return;
-
-        }
+        FirebaseInstanceId firebaseInstanceId = FirebaseInstanceId.getInstance();
+        Log.d(TAG, firebaseInstanceId.getToken());
 
         // inizializzo handlers ai drawable
         Button takeShotButton = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
