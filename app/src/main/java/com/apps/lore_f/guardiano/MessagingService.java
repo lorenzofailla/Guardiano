@@ -23,6 +23,7 @@ import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -56,6 +57,12 @@ public class MessagingService extends FirebaseMessagingService {
         Log.d(TAG, "From: " + remoteMessage.getFrom());
         Log.d(TAG, "Message: " + remoteMessage.getNotification().getBody());
 
+        // inizializzo il BroadcastManager
+        LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
+        Intent intent = new Intent("CAMERACONTROL___REMOTE_COMMAND_RECEIVED")
+                .putExtra("REMOTE_COMMAND_MESSAGE", remoteMessage.getNotification().getBody());
+
+        broadcastManager.sendBroadcast(intent);
 
         // Check if message contains a data payload.
         if (remoteMessage.getData().size() > 0) {

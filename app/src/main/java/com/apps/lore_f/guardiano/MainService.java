@@ -5,8 +5,10 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.media.MediaRecorder;
@@ -22,14 +24,22 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.RemoteMessage;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -70,13 +80,21 @@ public class MainService extends Service {
     // Firebase database
     public static DatabaseReference databaseReference;
     public static final String PICTURES_TAKEN_CHILD = "pictures_taken";
+    public static final String ONLINE_DEVICES_CHILD = "online_devices";
 
     // Firebase storage
     public static StorageReference storageReference;
     public static final String STORAGE_BUCKET="gs://guardiano-2c543.appspot.com/";
     private static UploadTask uploadTask;
 
-    //private static final String MESSAGE_SENT_EVENT = "message_sent";
+    // Firebase messaging
+    public static String deviceToken;
+
+    // Device description
+    public static String deviceDescription="Cucina";
+
+    // Service management
+    public static boolean amIRunning=false;
 
     private static String TAG = "_MainService";
 
@@ -91,6 +109,7 @@ public class MainService extends Service {
     }
 
     public static void setPreviewRotation(int previewRotation) {
+
         MainService.previewRotation = previewRotation;
 
         if(mainCamera!=null) {
@@ -119,7 +138,13 @@ public class MainService extends Service {
 
         // inizializzo il BroadcastManager
         broadcastManager = LocalBroadcastManager.getInstance(this);
-        //local_broadcastmanager.registerReceiver(broadcast_receiver, intent_filter);
+
+        // inzializzo i filtri per l'ascolto degli intent
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction("CAMERACONTROL___REMOTE_COMMAND_RECEIVED");
+
+        // registro il ricevitore di intent sul BroadcastManager registrato
+        broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
 
         // inizializzo taskHandler
         taskHandler = new Handler();
@@ -139,6 +164,8 @@ public class MainService extends Service {
             broadcastManager.sendBroadcast(new Intent("CAMERACONTROL___EVENT_CAMERA_STARTED"));
 
         }
+
+        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).addChildEventListener(childEventListener);
 
     }
 
@@ -164,6 +191,16 @@ public class MainService extends Service {
         // start the service in foreground
         startForeground(1, notification);
 
+        // ottiene il token del dispositivo
+        deviceToken = FirebaseInstanceId.getInstance().getToken();
+
+        // registra il dispositivo come online
+        OnlineDeviceMessage onlineDeviceMessage = new OnlineDeviceMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()),deviceToken,deviceDescription);
+        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).push().setValue(onlineDeviceMessage);
+
+        // registra il flag
+        amIRunning = true;
+
         // If we get killed, after returning from here, restart
         return START_STICKY;
 
@@ -179,9 +216,22 @@ public class MainService extends Service {
     @Override
     public void onDestroy() {
 
+        // rilascia la camera
         releaseCamera();
 
+        // de-registra il dispositivo dal database
+        // databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).child()
+
+
+        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).removeEventListener(childEventListener);
+
+        // de-registra il ricevitore di broadcast
+        broadcastManager.unregisterReceiver(broadcastReceiver);
+
         stopForeground(true);
+
+        // registra il flag
+        amIRunning = false;
 
     }
 
@@ -385,7 +435,7 @@ public class MainService extends Service {
             String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
             String pictureFilename = "IMG_" + timeStamp + ".jpg";
 
-            StorageReference pictureToBeUploaded=storageReference.child("pictures_taken/" + firebaseUser.getUid()+"/"+pictureFilename);
+            StorageReference pictureToBeUploaded=storageReference.child(firebaseUser.getUid()+"/"+"pictures_taken/" + pictureFilename);
             uploadTask = pictureToBeUploaded.putBytes(data);
 
             uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -395,7 +445,7 @@ public class MainService extends Service {
                     Uri downloadUrl = taskSnapshot.getMetadata().getDownloadUrl();
 
                     PictureTakenMessage pictureTakenMessage = new PictureTakenMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()),"Picture taken!", downloadUrl.toString());
-                    databaseReference.child(PICTURES_TAKEN_CHILD).child(firebaseUser.getUid()).push().setValue(pictureTakenMessage);
+                    databaseReference.child(firebaseUser.getUid()).child(PICTURES_TAKEN_CHILD).push().setValue(pictureTakenMessage);
 
                 }
             });
@@ -406,5 +456,60 @@ public class MainService extends Service {
         }
 
     };
+
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+
+        public void onReceive(Context context, Intent intent) {
+
+            Log.i(TAG, "Received intent: "+intent.getAction());
+
+            switch (intent.getAction()) {
+
+                case "CAMERACONTROL___REMOTE_COMMAND_RECEIVED":
+
+                    if (intent.hasExtra("REMOTE_COMMAND_MESSAGE")){
+
+                        String remoteCommand = intent.getStringExtra("REMOTE_COMMAND_MESSAGE");
+                        Toast.makeText(MainService.this, remoteCommand, Toast.LENGTH_SHORT).show();
+
+                    }
+
+                    break;
+            }
+
+        }
+    };
+
+    private ChildEventListener childEventListener = new ChildEventListener() {
+        @Override
+        public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+
+            Log.d(TAG, "onChildAdded :: " +s+ " || " + dataSnapshot.getKey() + " || " + dataSnapshot.getValue().toString());
+
+        }
+
+        @Override
+        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+        }
+
+        @Override
+        public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+        }
+
+        @Override
+        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+        }
+
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+
+        }
+    };
+
+
+
 
 }

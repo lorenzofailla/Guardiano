@@ -198,9 +198,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         super.onResume();
 
         // avvio il servizio
-        mainService = new Intent(this, MainService.class);
-        if (!isMainServiceRunning()) {
+        if(!MainService.amIRunning){
 
+            mainService = new Intent(this, MainService.class);
             startService(mainService);
 
         } else {
