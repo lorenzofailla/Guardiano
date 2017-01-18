@@ -81,6 +81,7 @@ public class MainService extends Service {
     public static DatabaseReference databaseReference;
     public static final String PICTURES_TAKEN_CHILD = "pictures_taken";
     public static final String ONLINE_DEVICES_CHILD = "online_devices";
+    private static String dataBaseOnlineDeviceRegistrationEntry = null;
 
     // Firebase storage
     public static StorageReference storageReference;
@@ -165,6 +166,8 @@ public class MainService extends Service {
 
         }
 
+        // inizializza il listener per le modifiche al database
+        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).removeEventListener(childEventListener);
         databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).addChildEventListener(childEventListener);
 
     }
@@ -219,11 +222,11 @@ public class MainService extends Service {
         // rilascia la camera
         releaseCamera();
 
-        // de-registra il dispositivo dal database
-        // databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).child()
-
-
+        // deregistra il ricevitore di eventi del database
         databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).removeEventListener(childEventListener);
+
+        // de-registra il dispositivo dal database
+        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).child(dataBaseOnlineDeviceRegistrationEntry).removeValue();
 
         // de-registra il ricevitore di broadcast
         broadcastManager.unregisterReceiver(broadcastReceiver);
@@ -480,11 +483,12 @@ public class MainService extends Service {
         }
     };
 
-    private ChildEventListener childEventListener = new ChildEventListener() {
+    private static ChildEventListener childEventListener = new ChildEventListener() {
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
 
             Log.d(TAG, "onChildAdded :: " +s+ " || " + dataSnapshot.getKey() + " || " + dataSnapshot.getValue().toString());
+            dataBaseOnlineDeviceRegistrationEntry = dataSnapshot.getKey();
 
         }
 
@@ -507,9 +511,7 @@ public class MainService extends Service {
         public void onCancelled(DatabaseError databaseError) {
 
         }
+
     };
-
-
-
 
 }
