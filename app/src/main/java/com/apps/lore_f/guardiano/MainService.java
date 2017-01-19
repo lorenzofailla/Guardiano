@@ -27,7 +27,9 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -68,7 +70,7 @@ import java.util.ListIterator;
 
 public class MainService extends Service {
 
-    public static Camera mainCamera=null;
+    public static Camera mainCamera = null;
     public static MediaRecorder mediaRecorder;
     private static Handler taskHandler;
     private static LocalBroadcastManager broadcastManager;
@@ -85,17 +87,17 @@ public class MainService extends Service {
 
     // Firebase storage
     public static StorageReference storageReference;
-    public static final String STORAGE_BUCKET="gs://guardiano-2c543.appspot.com/";
+    public static final String STORAGE_BUCKET = "gs://guardiano-2c543.appspot.com/";
     private static UploadTask uploadTask;
 
     // Firebase messaging
     public static String deviceToken;
 
     // Device description
-    public static String deviceDescription="Cucina";
+    public static String deviceDescription = "Cucina";
 
     // Service management
-    public static boolean amIRunning=false;
+    public static boolean amIRunning = false;
 
     private static String TAG = "_MainService";
 
@@ -113,7 +115,7 @@ public class MainService extends Service {
 
         MainService.previewRotation = previewRotation;
 
-        if(mainCamera!=null) {
+        if (mainCamera != null) {
 
             mainCamera.setDisplayOrientation(previewRotation);
 
@@ -121,7 +123,7 @@ public class MainService extends Service {
 
     }
 
-    public static int previewRotation=0;
+    public static int previewRotation = 0;
 
     @Override
     public void onCreate() {
@@ -156,7 +158,7 @@ public class MainService extends Service {
         // inizializzo lo starage di Firebase
         storageReference = FirebaseStorage.getInstance().getReferenceFromUrl(STORAGE_BUCKET);
 
-        if(safeCameraOpen()){
+        if (safeCameraOpen()) {
 
             Log.i(TAG, "Successfully opened camera");
             Toast.makeText(MainService.this, "Successfully opened camera.", Toast.LENGTH_SHORT).show();
@@ -165,10 +167,6 @@ public class MainService extends Service {
             broadcastManager.sendBroadcast(new Intent("CAMERACONTROL___EVENT_CAMERA_STARTED"));
 
         }
-
-        // inizializza il listener per le modifiche al database
-        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).removeEventListener(childEventListener);
-        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).addChildEventListener(childEventListener);
 
     }
 
@@ -196,10 +194,7 @@ public class MainService extends Service {
 
         // ottiene il token del dispositivo
         deviceToken = FirebaseInstanceId.getInstance().getToken();
-
-        // registra il dispositivo come online
-        OnlineDeviceMessage onlineDeviceMessage = new OnlineDeviceMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()),deviceToken,deviceDescription);
-        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).push().setValue(onlineDeviceMessage);
+        registerDeviceInDatabase(deviceToken, deviceDescription);
 
         // registra il flag
         amIRunning = true;
@@ -207,6 +202,16 @@ public class MainService extends Service {
         // If we get killed, after returning from here, restart
         return START_STICKY;
 
+
+    }
+
+    private static void registerDeviceInDatabase(String deviceToken, String deviceDescription) {
+
+        // registra il dispositivo come online
+        OnlineDeviceMessage onlineDeviceMessage = new OnlineDeviceMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), deviceToken, deviceDescription);
+
+        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).addChildEventListener(onlineDevicesEventListener);
+        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).push().setValue(onlineDeviceMessage);
 
     }
 
@@ -222,11 +227,13 @@ public class MainService extends Service {
         // rilascia la camera
         releaseCamera();
 
-        // deregistra il ricevitore di eventi del database
-        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).removeEventListener(childEventListener);
-
         // de-registra il dispositivo dal database
-        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).child(dataBaseOnlineDeviceRegistrationEntry).removeValue();
+        if (dataBaseOnlineDeviceRegistrationEntry != null) {
+
+            databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).child(dataBaseOnlineDeviceRegistrationEntry).removeValue();
+            dataBaseOnlineDeviceRegistrationEntry=null;
+
+        }
 
         // de-registra il ricevitore di broadcast
         broadcastManager.unregisterReceiver(broadcastReceiver);
@@ -240,15 +247,16 @@ public class MainService extends Service {
 
     private void releaseCamera() {
 
-        if (mainCamera!=null){
+        if (mainCamera != null) {
 
             mainCamera.stopPreview();
             mainCamera.release();
-            mainCamera=null;
+            mainCamera = null;
 
         }
 
     }
+
     private boolean safeCameraOpen() {
 
         boolean qOpened = false;
@@ -273,7 +281,7 @@ public class MainService extends Service {
 
     public static void setVideoLoopActivity(boolean status) {
 
-        if(status){
+        if (status) {
 
 
             // - avvia il loop di registrazione video
@@ -336,7 +344,6 @@ public class MainService extends Service {
     }
 
 
-
     /**
      * Create a File for saving an image or video
      */
@@ -382,7 +389,7 @@ public class MainService extends Service {
             mediaRecorder.stop();
             mainCamera.lock();
 
-            if(isVideoLoopRunning) {
+            if (isVideoLoopRunning) {
                 setVideoLoopActivity(false);
             }
 
@@ -391,12 +398,12 @@ public class MainService extends Service {
     };
 
 
-    public static void takeShot(){
+    public static void takeShot() {
             /*
         cattura un fotogramma dalla camera
             */
 
-        if(mainCamera!=null){
+        if (mainCamera != null) {
 
             mainCamera.takePicture(null, null, takeShotCallback);
 
@@ -438,7 +445,7 @@ public class MainService extends Service {
             String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
             String pictureFilename = "IMG_" + timeStamp + ".jpg";
 
-            StorageReference pictureToBeUploaded=storageReference.child(firebaseUser.getUid()+"/"+"pictures_taken/" + pictureFilename);
+            StorageReference pictureToBeUploaded = storageReference.child(firebaseUser.getUid() + "/" + "pictures_taken/" + pictureFilename);
             uploadTask = pictureToBeUploaded.putBytes(data);
 
             uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -447,7 +454,7 @@ public class MainService extends Service {
                     // Handle successful uploads on complete
                     Uri downloadUrl = taskSnapshot.getMetadata().getDownloadUrl();
 
-                    PictureTakenMessage pictureTakenMessage = new PictureTakenMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()),"Picture taken!", downloadUrl.toString());
+                    PictureTakenMessage pictureTakenMessage = new PictureTakenMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), "Picture taken!", downloadUrl.toString());
                     databaseReference.child(firebaseUser.getUid()).child(PICTURES_TAKEN_CHILD).push().setValue(pictureTakenMessage);
 
                 }
@@ -464,13 +471,13 @@ public class MainService extends Service {
 
         public void onReceive(Context context, Intent intent) {
 
-            Log.i(TAG, "Received intent: "+intent.getAction());
+            Log.i(TAG, "Received intent: " + intent.getAction());
 
             switch (intent.getAction()) {
 
                 case "CAMERACONTROL___REMOTE_COMMAND_RECEIVED":
 
-                    if (intent.hasExtra("REMOTE_COMMAND_MESSAGE")){
+                    if (intent.hasExtra("REMOTE_COMMAND_MESSAGE")) {
 
                         String remoteCommand = intent.getStringExtra("REMOTE_COMMAND_MESSAGE");
                         Toast.makeText(MainService.this, remoteCommand, Toast.LENGTH_SHORT).show();
@@ -483,12 +490,14 @@ public class MainService extends Service {
         }
     };
 
-    private static ChildEventListener childEventListener = new ChildEventListener() {
+    private static ChildEventListener onlineDevicesEventListener = new ChildEventListener() {
+
+
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
 
-            Log.d(TAG, "onChildAdded :: " +s+ " || " + dataSnapshot.getKey() + " || " + dataSnapshot.getValue().toString());
             dataBaseOnlineDeviceRegistrationEntry = dataSnapshot.getKey();
+            databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).removeEventListener(this);
 
         }
 
