@@ -99,13 +99,20 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         switch(item.getItemId()){
 
-            case R.id.sign_out_menu:
+            case R.id.sign_out_menuEntry:
                 // è stato selezionata l'opzione di sign out dal menu
                 firebaseAuth.signOut();
                 Auth.GoogleSignInApi.signOut(googleApiClient);
 
                 //mUsername=ANONYMOUS;
                 startActivity(new Intent(this, SignInActivity.class));
+                return true;
+
+            case R.id.quit_app_menuEntry:
+
+                // è stato selezionata l'opzione di sign out dal menu
+                stopService(mainService);
+                finish();
                 return true;
 
             default:
@@ -289,12 +296,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     protected void onPause() {
 
         super.onPause();
-
-        if(!(MainService.isVideoLoopRunning)){
-
-            stopService(mainService);
-
-        }
 
         broadcastManager.unregisterReceiver(broadcastReceiver);
 

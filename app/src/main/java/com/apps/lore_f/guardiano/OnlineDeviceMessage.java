@@ -10,6 +10,24 @@ public class OnlineDeviceMessage {
     private String dateStamp;
     private String deviceToken;
     private String deviceDescription;
+    private String deviceName;
+    private String deviceModel;
+
+    public String getDeviceName() {
+        return deviceName;
+    }
+
+    public void setDeviceName(String deviceName) {
+        this.deviceName = deviceName;
+    }
+
+    public String getDeviceModel() {
+        return deviceModel;
+    }
+
+    public void setDeviceModel(String deviceModel) {
+        this.deviceModel = deviceModel;
+    }
 
     public String getId() {
         return id;

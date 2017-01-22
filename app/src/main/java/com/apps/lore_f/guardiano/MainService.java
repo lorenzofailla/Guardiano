@@ -37,6 +37,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
@@ -81,6 +82,7 @@ public class MainService extends Service {
 
     // Firebase database
     public static DatabaseReference databaseReference;
+    public static FirebaseDatabase firebaseDatabase;
     public static final String PICTURES_TAKEN_CHILD = "pictures_taken";
     public static final String ONLINE_DEVICES_CHILD = "online_devices";
     private static String dataBaseOnlineDeviceRegistrationEntry = null;
@@ -202,18 +204,86 @@ public class MainService extends Service {
         // If we get killed, after returning from here, restart
         return START_STICKY;
 
-
     }
 
     private static void registerDeviceInDatabase(String deviceToken, String deviceDescription) {
 
+
+        // TODO: 21/01/2017 cercare tra i children se esiste già un dispositivo con lo stesso deviceDescription, eventualmente cancellare
+        DatabaseReference onlineDevicesDatabaseReference = databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD);
+        Query onlineDevicesQuery = onlineDevicesDatabaseReference.orderByChild("deviceDescription").equalTo(deviceDescription);
+        onlineDevicesQuery.addListenerForSingleValueEvent(onlineDevicesValueEventListener);
+
+        /*
         // registra il dispositivo come online
         OnlineDeviceMessage onlineDeviceMessage = new OnlineDeviceMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), deviceToken, deviceDescription);
 
-        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).addChildEventListener(onlineDevicesEventListener);
-        databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).push().setValue(onlineDeviceMessage);
+        DatabaseReference onLineDeviceEntry = databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).push();
+        onLineDeviceEntry.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
 
+                Log.d(TAG, "Device registered: " + dataSnapshot.getKey());
+                dataBaseOnlineDeviceRegistrationEntry = dataSnapshot.getKey();
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+                dataBaseOnlineDeviceRegistrationEntry = null;
+
+            }
+
+        });
+
+        onLineDeviceEntry.setValue(onlineDeviceMessage);
+        */
     }
+
+    private static ValueEventListener onlineDevicesValueEventListener = new ValueEventListener() {
+        @Override
+        public void onDataChange(DataSnapshot dataSnapshot) {
+
+            // rimuove i children con la stessa descrizione
+            Log.d(TAG, String.format("%d devices found with the same description.", dataSnapshot.getChildrenCount()));
+            dataSnapshot.getRef().removeValue();
+
+            // inserisce un nuovo child con un nuovo OnlineDeviceMessage
+            OnlineDeviceMessage onlineDeviceMessage = new OnlineDeviceMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), deviceToken, deviceDescription);
+
+            DatabaseReference onLineDeviceEntry = databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).push();
+            onLineDeviceEntry.addListenerForSingleValueEvent(deviceRegisteredValueEventListener);
+
+            onLineDeviceEntry.setValue(onlineDeviceMessage);
+
+        }
+
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+
+        }
+
+    };
+
+    private static ValueEventListener deviceRegisteredValueEventListener = new ValueEventListener() {
+        @Override
+        public void onDataChange(DataSnapshot dataSnapshot) {
+
+            // dispositivo registrato
+            Log.d(TAG, "Device registered: " + dataSnapshot.getKey());
+            dataBaseOnlineDeviceRegistrationEntry = dataSnapshot.getKey();
+
+        }
+
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+
+            dataBaseOnlineDeviceRegistrationEntry = null;
+
+        }
+
+    };
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -488,39 +558,6 @@ public class MainService extends Service {
             }
 
         }
-    };
-
-    private static ChildEventListener onlineDevicesEventListener = new ChildEventListener() {
-
-
-        @Override
-        public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-
-            dataBaseOnlineDeviceRegistrationEntry = dataSnapshot.getKey();
-            databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).removeEventListener(this);
-
-        }
-
-        @Override
-        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-
-        }
-
-        @Override
-        public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-        }
-
-        @Override
-        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-        }
-
-        @Override
-        public void onCancelled(DatabaseError databaseError) {
-
-        }
-
     };
 
 }

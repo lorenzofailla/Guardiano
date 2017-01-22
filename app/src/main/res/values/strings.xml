@@ -14,6 +14,7 @@
 
     <!-- MainActivity_Menu -->
     <string name="MainActivity_Menu_signOut">Sign out</string>
+    <string name="MainActivity_Menu_quitApp">Quit</string>
 
     <!-- messaggi di errore -->
 

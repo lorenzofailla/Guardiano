@@ -10,6 +10,11 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.apps.lore_f.guardiano.PermissionsRequestActivity">
 
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/linearLayout">
+    android:orientation="vertical"
 
     <GridLayout
         android:layout_width="match_parent"
@@ -95,6 +100,32 @@
             android:paddingLeft="5dp"/>
 
     </GridLayout>
+
+    <TextView
+        android:text="@string/PermissionsRequestActivity_permissionDenied"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/TXV___PERMISSIONSREQUEST___DEVICE_NAME_LABEL"
+
+        android:layout_gravity="left|top"
+        android:paddingLeft="5dp"/>
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="textPersonName"
+        android:text="Name"
+        android:ems="10"
+        android:layout_below="@+id/linearLayout"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginLeft="23dp"
+        android:layout_marginStart="23dp"
+        android:layout_marginTop="74dp"
+        android:id="@+id/editText" />
+
+</LinearLayout>
+
 
 
 </RelativeLayout>
