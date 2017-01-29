@@ -196,7 +196,8 @@ public class MainService extends Service {
 
         // ottiene il token del dispositivo
         deviceToken = FirebaseInstanceId.getInstance().getToken();
-        registerDeviceInDatabase(deviceToken, deviceDescription);
+
+        //registerDeviceInDatabase(deviceToken, deviceDescription);
 
         // registra il flag
         amIRunning = true;
@@ -206,40 +207,16 @@ public class MainService extends Service {
 
     }
 
+
     private static void registerDeviceInDatabase(String deviceToken, String deviceDescription) {
 
-
-        // TODO: 21/01/2017 cercare tra i children se esiste già un dispositivo con lo stesso deviceDescription, eventualmente cancellare
         DatabaseReference onlineDevicesDatabaseReference = databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD);
         Query onlineDevicesQuery = onlineDevicesDatabaseReference.orderByChild("deviceDescription").equalTo(deviceDescription);
         onlineDevicesQuery.addListenerForSingleValueEvent(onlineDevicesValueEventListener);
 
-        /*
-        // registra il dispositivo come online
-        OnlineDeviceMessage onlineDeviceMessage = new OnlineDeviceMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), deviceToken, deviceDescription);
-
-        DatabaseReference onLineDeviceEntry = databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).push();
-        onLineDeviceEntry.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-
-                Log.d(TAG, "Device registered: " + dataSnapshot.getKey());
-                dataBaseOnlineDeviceRegistrationEntry = dataSnapshot.getKey();
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-                dataBaseOnlineDeviceRegistrationEntry = null;
-
-            }
-
-        });
-
-        onLineDeviceEntry.setValue(onlineDeviceMessage);
-        */
     }
+
+
 
     private static ValueEventListener onlineDevicesValueEventListener = new ValueEventListener() {
         @Override
@@ -285,6 +262,7 @@ public class MainService extends Service {
 
     };
 
+
     @Override
     public IBinder onBind(Intent intent) {
         // We don't provide binding, so return null
@@ -297,6 +275,7 @@ public class MainService extends Service {
         // rilascia la camera
         releaseCamera();
 
+        /*
         // de-registra il dispositivo dal database
         if (dataBaseOnlineDeviceRegistrationEntry != null) {
 
@@ -304,6 +283,10 @@ public class MainService extends Service {
             dataBaseOnlineDeviceRegistrationEntry=null;
 
         }
+        */
+
+        // rimuove la sottoscrizione al topic
+        FirebaseMessaging.getInstance().unsubscribeFromTopic(firebaseUser.getUid()+"/"+deviceDescription+"/remote_commands");
 
         // de-registra il ricevitore di broadcast
         broadcastManager.unregisterReceiver(broadcastReceiver);
