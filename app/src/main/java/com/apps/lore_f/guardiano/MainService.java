@@ -101,7 +101,7 @@ public class MainService extends Service {
     // Service management
     public static boolean amIRunning = false;
 
-    private static String TAG = "_MainService";
+    private static String TAG = "->MainService";
 
     public static boolean isVideoLoopRunning = false;
     public static long standardLoopDuration = 50000;
@@ -197,7 +197,8 @@ public class MainService extends Service {
         // ottiene il token del dispositivo
         deviceToken = FirebaseInstanceId.getInstance().getToken();
 
-        //registerDeviceInDatabase(deviceToken, deviceDescription);
+        // regirstra il dispositivo nel database con il token ottenuto
+        registerDeviceInDatabase(deviceToken, deviceDescription);
 
         // registra il flag
         amIRunning = true;
@@ -207,7 +208,6 @@ public class MainService extends Service {
 
     }
 
-
     private static void registerDeviceInDatabase(String deviceToken, String deviceDescription) {
 
         DatabaseReference onlineDevicesDatabaseReference = databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD);
@@ -215,7 +215,6 @@ public class MainService extends Service {
         onlineDevicesQuery.addListenerForSingleValueEvent(onlineDevicesValueEventListener);
 
     }
-
 
 
     private static ValueEventListener onlineDevicesValueEventListener = new ValueEventListener() {
