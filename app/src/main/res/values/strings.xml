@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Guardiano</string>
 
+
     <!-- MainActivity -->
     <string name="MainActivity_mainLabel">Camera preview.</string>
     <string name="MainActivity_buttonStartVideoLoop">Start video loop</string>
@@ -30,8 +31,15 @@
     <string name="PermissionsRequestActivity_permissionGranted">GRANTED</string>
     <string name="PermissionsRequestActivity_permissionDenied">DENIED</string>
 
+    <string name="PermissionsRequestActivity_deviceDescriptionExplanation">Please enter a description for this device</string>
+    <string name="PermissionsRequestActivity_deviceDescriptionLabel">Device name:</string>
+
+
     <!-- Comandi da client -->
     <string name="Incomingcommands___TAKE_SHOT" translatable="false">COMMAND_FROM_CLIENT:::TAKE_PICTURE</string>
 
+    <!-- Risorse stringa generiche -->
+    <string name="preferenceFileKey" translatable="false">GUARDIANO_PREFERENCES</string>
+    <string name="preference___DeviceDescriptionKey" translatable="false">preference___DeviceDescription</string>
 
 </resources>

@@ -28,7 +28,7 @@ public class PermissionsRequestActivity extends AppCompatActivity {
 
     private void updateUI(){
 
-        if(SharedFunctions.checkPermissions(this)){
+        if(SharedFunctions.checkPermissions(this) && MainService.deviceDescription!=""){
 
             startActivity(new Intent(this, MainActivity.class));
             finish();
@@ -39,6 +39,8 @@ public class PermissionsRequestActivity extends AppCompatActivity {
             askForMissingPermissions();
 
         }
+
+
 
     }
 

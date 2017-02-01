@@ -96,7 +96,7 @@ public class MainService extends Service {
     public static String deviceToken;
 
     // Device description
-    public static String deviceDescription = "Cucina";
+    public static String deviceDescription;
 
     // Service management
     public static boolean amIRunning = false;
@@ -283,9 +283,6 @@ public class MainService extends Service {
 
         }
         */
-
-        // rimuove la sottoscrizione al topic
-        FirebaseMessaging.getInstance().unsubscribeFromTopic(firebaseUser.getUid()+"/"+deviceDescription+"/remote_commands");
 
         // de-registra il ricevitore di broadcast
         broadcastManager.unregisterReceiver(broadcastReceiver);

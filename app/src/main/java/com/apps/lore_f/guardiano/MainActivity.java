@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.media.MediaRecorder;
@@ -13,6 +14,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
@@ -32,6 +34,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -49,7 +52,7 @@ import java.util.List;
 import static com.apps.lore_f.guardiano.MainService.firebaseAuth;
 import static com.apps.lore_f.guardiano.MainService.firebaseUser;
 
-public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback {
+public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, GoogleApiClient.OnConnectionFailedListener {
 
     Intent mainService;
 
@@ -59,9 +62,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private SurfaceHolder cameraPreviewHolder;
 
     private final static String TAG = "_MainActivity";
-    private final static String MAIN_SERVICE_NAME = "com.apps.lore_f.guardiano.MainService";
 
     private GoogleApiClient googleApiClient;
+
+    SharedPreferences sharedPreferences;
+
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
 
@@ -100,6 +105,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         switch(item.getItemId()){
 
             case R.id.sign_out_menuEntry:
+
+                stopService(mainService);
+
                 // è stato selezionata l'opzione di sign out dal menu
                 firebaseAuth.signOut();
                 Auth.GoogleSignInApi.signOut(googleApiClient);
@@ -121,6 +129,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         }
 
     }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -133,7 +142,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         altrimenti inizializza i controlli
          */
 
-        if(!SharedFunctions.checkPermissions(this)){
+        // ottiene un'istanza per le SharedPreferences
+        sharedPreferences = getSharedPreferences(getString(R.string.preferenceFileKey), Context.MODE_PRIVATE);
+
+        // carica le impostazioni memorizzate nelle SharedPreferences
+        loadPreferences();
+
+        if(!SharedFunctions.checkPermissions(this) || (MainService.deviceDescription=="")){
             //
             //
             startActivity(new Intent(this, PermissionsRequestActivity.class));
@@ -156,6 +171,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             return;
 
         }
+
+        googleApiClient = new GoogleApiClient.Builder(this)
+                .enableAutoManage(this /* FragmentActivity */, this /* OnConnectionFailedListener */)
+                .addApi(Auth.GOOGLE_SIGN_IN_API)
+                .build();
 
         FirebaseInstanceId firebaseInstanceId = FirebaseInstanceId.getInstance();
         Log.d(TAG, firebaseInstanceId.getToken());
@@ -189,6 +209,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
         );
     }
+
+    private void loadPreferences(){
+
+        // ottiene le preferenze
+        MainService.deviceDescription = sharedPreferences.getString(getString(R.string.preference___DeviceDescriptionKey), "");
+
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -523,15 +551,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     }
 
-    private boolean isMainServiceRunning() {
-        ActivityManager manager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (MAIN_SERVICE_NAME.equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        // An unresolvable error has occurred and Google APIs (including Sign-In) will not
+        // be available.
+        Log.d(TAG, "onConnectionFailed:" + connectionResult);
+        Toast.makeText(this, "Google Play Services error.", Toast.LENGTH_SHORT).show();
     }
-
 
 }
