@@ -113,27 +113,25 @@
         android:paddingLeft="5dp"/>
 
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_height="match_parent">
 
         <EditText
             android:layout_height="wrap_content"
             android:inputType="text"
             android:id="@+id/ETX___PERMISSIONSREQUEST___DEVICE_NAME"
             android:layout_width="wrap_content"
-            android:width="@android:dimen/dialog_min_width_major" />
+            android:layout_toStartOf="@+id/IBN___PERMISSIONSREQUEST___DEVICE_NAME_CONFIRM"
+            android:layout_alignParentStart="true" />
 
         <ImageButton
             android:layout_height="wrap_content"
             app:srcCompat="@android:drawable/ic_menu_set_as"
             android:id="@+id/IBN___PERMISSIONSREQUEST___DEVICE_NAME_CONFIRM"
-            android:layout_width="wrap_content" />
-
-    </LinearLayout>
-
-
+            android:layout_width="wrap_content"
+            android:layout_alignParentRight="true" />
+    </RelativeLayout>
 
 
 </LinearLayout>

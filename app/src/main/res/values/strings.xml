@@ -13,6 +13,9 @@
     <string name="MainActivity_videoLoopPaused">Video loop paused.</string>
     <string name="MainActivity_videoLoopRunning">Video loop running.</string>
 
+    <string name="MainActivity_userNameLabel">User name:</string>
+    <string name="MainActivity_deviceNameLabel">Device name:</string>
+
     <!-- MainActivity_Menu -->
     <string name="MainActivity_Menu_signOut">Sign out</string>
     <string name="MainActivity_Menu_quitApp">Quit</string>

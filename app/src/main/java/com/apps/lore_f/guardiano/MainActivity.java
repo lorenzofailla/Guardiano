@@ -149,7 +149,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         loadPreferences();
 
         if(!SharedFunctions.checkPermissions(this) || (MainService.deviceDescription=="")){
-            //
+
             //
             startActivity(new Intent(this, PermissionsRequestActivity.class));
             finish();
@@ -171,6 +171,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             return;
 
         }
+
+        TextView userNameTextView = (TextView) findViewById(R.id.TXV___MAIN___USERNAME) ;
+        TextView deviceNameTextView = (TextView) findViewById(R.id.TXV___MAIN___DEVICENAME) ;
+
+        userNameTextView.setText (firebaseAuth.getCurrentUser().getEmail());
+        deviceNameTextView.setText (MainService.deviceDescription);
 
         googleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this /* FragmentActivity */, this /* OnConnectionFailedListener */)

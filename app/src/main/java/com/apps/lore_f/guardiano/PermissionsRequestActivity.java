@@ -2,12 +2,17 @@ package com.apps.lore_f.guardiano;
 
 import android.*;
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 public class PermissionsRequestActivity extends AppCompatActivity {
@@ -17,12 +22,46 @@ public class PermissionsRequestActivity extends AppCompatActivity {
     private static final int PERMISSION_WRITE_EXTERNAL_STORAGE = 30;
     private static final int PERMISSION_INTERNET=40;
 
+    EditText deviceNameEditText;
+    ImageButton confirmDeviceNameChangeButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_permissions_request);
 
+
+
+        deviceNameEditText = (EditText) findViewById(R.id.ETX___PERMISSIONSREQUEST___DEVICE_NAME);
+
+        confirmDeviceNameChangeButton = (ImageButton) findViewById(R.id.IBN___PERMISSIONSREQUEST___DEVICE_NAME_CONFIRM);
+        confirmDeviceNameChangeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                if (deviceNameEditText.getText().toString() != "") {
+
+
+                    MainService.deviceDescription=deviceNameEditText.getText().toString();
+                    updateSharedPreferences();
+                    updateUI();
+
+                }
+
+            }
+        });
+
         updateUI();
+
+    }
+
+    private void updateSharedPreferences(){
+
+        SharedPreferences sharedPreferences = getSharedPreferences(getString(R.string.preferenceFileKey), Context.MODE_PRIVATE);
+        SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit()
+                .putString(getString(R.string.preference___DeviceDescriptionKey), MainService.deviceDescription);
+        sharedPreferencesEditor.commit();
+
 
     }
 
@@ -37,6 +76,21 @@ public class PermissionsRequestActivity extends AppCompatActivity {
         } else {
 
             askForMissingPermissions();
+
+            if(MainService.deviceDescription==""){
+
+                deviceNameEditText.setText("device description");
+                deviceNameEditText.selectAll();
+                deviceNameEditText.setEnabled(true);
+                confirmDeviceNameChangeButton.setEnabled(true);
+
+            } else {
+
+                deviceNameEditText.setText(MainService.deviceDescription);
+                deviceNameEditText.setEnabled(false);
+                confirmDeviceNameChangeButton.setEnabled(false);
+
+            }
 
         }
 

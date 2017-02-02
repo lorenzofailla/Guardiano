@@ -1,10 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     >
+
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="2"
+        android:rowCount="2"
+        android:padding="10dp">
+
+        <TextView
+            android:text="@string/MainActivity_userNameLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_row="0"
+            android:layout_column="0"
+            android:id="@+id/TXV___MAIN___USERNAME_LABEL"
+            tools:text="@string/MainActivity_userNameLabel"
+            android:padding="5dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_row="0"
+            android:layout_column="1"
+            android:id="@+id/TXV___MAIN___USERNAME"
+            android:padding="5dp" />
+
+        <TextView
+            android:text=""
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_row="1"
+            android:layout_column="1"
+            android:id="@+id/TXV___MAIN___DEVICENAME"
+            android:padding="5dp" />
+
+        <TextView
+            android:text="@string/MainActivity_deviceNameLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_row="1"
+            android:layout_column="0"
+            android:id="@+id/TXV___MAIN___DEVICENAME_LABEL"
+            tools:text="@string/MainActivity_deviceNameLabel"
+            android:padding="5dp" />
+
+    </GridLayout>
 
     <LinearLayout
         android:orientation="horizontal"
@@ -54,6 +101,8 @@
                 android:layout_gravity="center_horizontal" />
 
         </LinearLayout>
+
+
 
     </LinearLayout>
 
