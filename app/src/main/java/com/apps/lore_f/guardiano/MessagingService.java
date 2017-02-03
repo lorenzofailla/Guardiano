@@ -42,6 +42,7 @@ public class MessagingService extends FirebaseMessagingService {
         Map<String, String> messageData;
         String messageTitle;
         String messageCommand="";
+        String messageSender=remoteMessage.getFrom();
 
         // Check if message contains a data payload.
         if (remoteMessage.getData().size() > 0) {
@@ -57,22 +58,6 @@ public class MessagingService extends FirebaseMessagingService {
 
         Log.d(TAG, "From: " + remoteMessage.getFrom());
 
-        /*
-        // inizializzo il BroadcastManager
-        LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
-        Intent intent = new Intent("CAMERACONTROL___REMOTE_COMMAND_RECEIVED")
-                .putExtra("REMOTE_COMMAND_MESSAGE", remoteMessage.getNotification().getBody());
-
-        broadcastManager.sendBroadcast(intent);
-        */
-
-        /*
-        // Check if message contains a notification payload.
-        if (remoteMessage.getNotification() != null) {
-            Log.d(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
-        }
-        */
-
         switch(messageCommand){
 
             case "COMMAND_FROM_CLIENT:::TAKE_PICTURE":
@@ -80,9 +65,11 @@ public class MessagingService extends FirebaseMessagingService {
                 MainService.takeShot();
                 break;
 
+            case "COMMAND_FROM_CLIENT:::ARE_YOU_ALIVE":
+                MainService.sendMessage(messageSender, "RESPONSE_FROM_SERVER:::YES_I_AM_ALIVE");
+                break;
+
         }
-
-
 
         // Also if you intend on generating your own notifications as a result of a received FCM
         // message, here is where that should be initiated. See sendNotification method below.
