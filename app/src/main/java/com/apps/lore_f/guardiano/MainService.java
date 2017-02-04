@@ -224,7 +224,6 @@ public class MainService extends Service {
 
     }
 
-
     private static ValueEventListener onlineDevicesValueEventListener = new ValueEventListener() {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
@@ -282,15 +281,14 @@ public class MainService extends Service {
         // rilascia la camera
         releaseCamera();
 
-        /*
-        // de-registra il dispositivo dal database
+        /* de-registra il dispositivo dal database */
         if (dataBaseOnlineDeviceRegistrationEntry != null) {
 
             databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).child(dataBaseOnlineDeviceRegistrationEntry).removeValue();
             dataBaseOnlineDeviceRegistrationEntry=null;
 
         }
-        */
+
 
         // de-registra il ricevitore di broadcast
         broadcastManager.unregisterReceiver(broadcastReceiver);
@@ -500,7 +498,7 @@ public class MainService extends Service {
             }
 
             String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-            String pictureFilename = "IMG_" + timeStamp + ".jpg";
+            String pictureFilename = "IMG_" + deviceDescription + "_" + timeStamp + ".jpg";
 
             StorageReference pictureToBeUploaded = storageReference.child(firebaseUser.getUid() + "/" + "pictures_taken/" + pictureFilename);
             uploadTask = pictureToBeUploaded.putBytes(data);
@@ -511,7 +509,7 @@ public class MainService extends Service {
                     // Handle successful uploads on complete
                     Uri downloadUrl = taskSnapshot.getMetadata().getDownloadUrl();
 
-                    PictureTakenMessage pictureTakenMessage = new PictureTakenMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), "Picture taken!", downloadUrl.toString());
+                    PictureTakenMessage pictureTakenMessage = new PictureTakenMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), "Required by user", downloadUrl.toString(), deviceDescription);
                     databaseReference.child(firebaseUser.getUid()).child(PICTURES_TAKEN_CHILD).push().setValue(pictureTakenMessage);
 
                 }
@@ -547,7 +545,7 @@ public class MainService extends Service {
         }
     };
 
-    public static void sendMessage(final String recipient, final String message) {
+    public static void sendMessage(final String recipient, final String message, final String sender) {
 
         new AsyncTask<String, String, String>() {
             @Override
@@ -555,7 +553,7 @@ public class MainService extends Service {
                 try {
 
                     return getResponseFromMessagingServer(
-                            "http://lorenzofailla.esy.es/Guardiano/Messaging/sendmessage.php?Action=M&t=title&m="+message+"&r="+recipient+"");
+                            "http://lorenzofailla.esy.es/Guardiano/Messaging/sendmessage.php?Action=M&t=title&m="+message+"&r="+recipient+"&sender="+sender);
 
                     // TODO: 29/01/2017 implementare, sia lato server che lato client, il time to live del messaggio
 

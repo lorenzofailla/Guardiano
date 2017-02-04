@@ -12,6 +12,15 @@ public class PictureTakenMessage {
     private String dateStamp;
     private String generalInfo;
     private String pictureURL;
+    private String sourceDevice;
+
+    public String getSourceDevice() {
+        return sourceDevice;
+    }
+
+    public void setSourceDevice(String sourceDevice) {
+        this.sourceDevice = sourceDevice;
+    }
 
     public String getPictureURL() {
         return pictureURL;
@@ -49,11 +58,12 @@ public class PictureTakenMessage {
 
     }
 
-    public PictureTakenMessage(String dateStamp, String generalInfo, String pictureURL){
+    public PictureTakenMessage(String dateStamp, String generalInfo, String pictureURL, String sourceDevice){
 
         this.dateStamp = dateStamp;
         this.generalInfo= generalInfo;
         this.pictureURL = pictureURL;
+        this.sourceDevice = sourceDevice;
 
     }
 

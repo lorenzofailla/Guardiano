@@ -27,6 +27,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -42,7 +43,7 @@ public class MessagingService extends FirebaseMessagingService {
         Map<String, String> messageData;
         String messageTitle;
         String messageCommand="";
-        String messageSender=remoteMessage.getFrom();
+        String messageSender;
 
         // Check if message contains a data payload.
         if (remoteMessage.getData().size() > 0) {
@@ -51,23 +52,26 @@ public class MessagingService extends FirebaseMessagingService {
             recupera i dati contenuti nel corpo del messaggio
             * */
             messageData = remoteMessage.getData();
-            messageTitle=messageData.get("title");
-            messageCommand=messageData.get("message");
 
-        }
+            messageTitle = messageData.get("title");
+            messageCommand = messageData.get("message");
+            messageSender = messageData.get("reply-to");
 
-        Log.d(TAG, "From: " + remoteMessage.getFrom());
+            Log.d(TAG, "received message: " + messageData);
 
-        switch(messageCommand){
+            switch (messageCommand) {
 
-            case "COMMAND_FROM_CLIENT:::TAKE_PICTURE":
+                case "COMMAND_FROM_CLIENT:::TAKE_PICTURE":
 
-                MainService.takeShot();
-                break;
+                    MainService.takeShot();
+                    break;
 
-            case "COMMAND_FROM_CLIENT:::ARE_YOU_ALIVE":
-                MainService.sendMessage(messageSender, "RESPONSE_FROM_SERVER:::YES_I_AM_ALIVE");
-                break;
+                case "COMMAND_FROM_CLIENT:::ARE_YOU_ALIVE":
+
+                    MainService.sendMessage(messageSender, "RESPONSE_FROM_SERVER:::YES_I_AM_ALIVE", FirebaseInstanceId.getInstance().getToken());
+                    break;
+
+            }
 
         }
 
