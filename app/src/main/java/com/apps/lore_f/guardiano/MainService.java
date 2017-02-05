@@ -10,6 +10,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -117,30 +119,14 @@ public class MainService extends Service {
     private static final int MEDIA_TYPE_IMAGE = 1;
     private static final int MEDIA_TYPE_VIDEO = 2;
 
-    public static int getPreviewRotation() {
-        return previewRotation;
-    }
-
-    public static void setPreviewRotation(int previewRotation) {
-
-        MainService.previewRotation = previewRotation;
-
-        if (mainCamera != null) {
-
-            mainCamera.setDisplayOrientation(previewRotation);
-
-        }
-
-    }
-
     public static int previewRotation = 0;
+
+    private Bitmap previousFrame;
+    private Bitmap currentFrame;
 
     @Override
     public void onCreate() {
-        // Start up the thread running the service.  Note that we create a
-        // separate thread because the service normally runs in the process's
-        // main thread, which we don't want to block.  We also make it
-        // background priority so CPU-intensive work will not disrupt our UI.
+
         super.onCreate();
 
         HandlerThread thread = new HandlerThread("ServiceStartArguments",
@@ -171,14 +157,55 @@ public class MainService extends Service {
         if (safeCameraOpen()) {
 
             Log.i(TAG, "Successfully opened camera");
-            Toast.makeText(MainService.this, "Successfully opened camera.", Toast.LENGTH_SHORT).show();
+
+            configureCamera();
+
+            mainCamera.setPreviewCallback(previewCallback);
             mainCamera.startPreview();
+
+            if(mainCamera.getParameters().getMaxNumDetectedFaces()>0){
+
+                mainCamera.setFaceDetectionListener(faceDetectionListener);
+                mainCamera.startFaceDetection();
+
+            } else {
+
+                Log.d(TAG, "face detection not supported");
+
+            }
 
             broadcastManager.sendBroadcast(new Intent("CAMERACONTROL___EVENT_CAMERA_STARTED"));
 
         }
 
     }
+
+    Camera.FaceDetectionListener faceDetectionListener = new Camera.FaceDetectionListener() {
+        @Override
+        public void onFaceDetection(Camera.Face[] faces, Camera camera) {
+
+            Log.d(TAG, faces.length + " faces detected.");
+
+        }
+
+    };
+
+    Camera.PreviewCallback previewCallback = new Camera.PreviewCallback() {
+        @Override
+        public void onPreviewFrame(byte[] data, Camera camera) {
+
+            if (currentFrame!=null){
+
+                previousFrame=currentFrame;
+
+            }
+
+            currentFrame = BitmapFactory.decodeByteArray(data, 0, data.length);
+            Log.d(TAG, "received " + data.length + " bytes of data");
+
+        }
+
+    };
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -312,14 +339,32 @@ public class MainService extends Service {
 
     }
 
+    private void configureCamera(){
+
+        /* configura i parametri di funzionamento della camera */
+
+        if (mainCamera!=null){
+
+            // ottiene i parametri della camera
+            Camera.Parameters cameraParameters = mainCamera.getParameters();
+
+            // imposta i parametri
+            cameraParameters.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
+            cameraParameters.setJpegQuality(100);
+
+            mainCamera.setParameters(cameraParameters);
+
+        }
+
+    }
     private boolean safeCameraOpen() {
 
-        boolean qOpened = false;
+        boolean isCameraOpened = false;
 
         try {
 
             mainCamera = Camera.open();
-            qOpened = (mainCamera != null);
+            isCameraOpened = (mainCamera != null);
             Log.i(TAG, "connected to Camera");
 
         } catch (Exception e) {
@@ -330,14 +375,13 @@ public class MainService extends Service {
 
         }
 
-        return qOpened;
+        return isCameraOpened;
 
     }
 
     public static void setVideoLoopActivity(boolean status) {
 
         if (status) {
-
 
             // - avvia il loop di registrazione video
             // inizializza il MediaRecorder
