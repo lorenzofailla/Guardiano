@@ -30,6 +30,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -94,6 +95,17 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     buttonTakeShot.setEnabled(true);
 
                     break;
+
+                case "CAMERACONTROL___MOTION_PICTURE_READY":
+
+                    if (MainService.motionBitmap!=null) {
+
+                        ImageView motionPicture = (ImageView) findViewById(R.id.IVW___MAIN___MOTIONPICTURE);
+                        motionPicture.setImageBitmap(MainService.motionBitmap);
+                    }
+
+                    break;
+
             }
 
         }
@@ -199,6 +211,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
                     }
                 }
+
         );
 
         // inizializzo handlers ai drawable
@@ -214,6 +227,18 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     }
                 }
         );
+
+        Button computeMotionPictureButton = (Button) findViewById(R.id.BTN___MAIN___SEEMOTION);
+        computeMotionPictureButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                new MainService.ProcessFrames().execute();
+
+            }
+
+        });
+
     }
 
     private void loadPreferences(){
@@ -255,6 +280,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         intentFilter.addAction("CAMERACONTROL___REQUEST_UI_UPDATE");
         intentFilter.addAction("CAMERACONTROL___EVENT_CAMERA_STARTED");
         intentFilter.addAction("CAMERACONTROL___SHOT_TAKEN");
+        intentFilter.addAction("CAMERACONTROL___MOTION_PICTURE_READY");
 
         // inizializzo il BroadcastManager
         broadcastManager = LocalBroadcastManager.getInstance(this);

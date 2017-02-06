@@ -12,6 +12,8 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.ImageFormat;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -53,6 +55,7 @@ import com.google.firebase.storage.UploadTask;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.opencv.android.Utils;
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
@@ -125,8 +128,11 @@ public class MainService extends Service {
 
     public static int previewRotation = 0;
 
-    private byte[] previousFrameData;
-    private byte[] currentFrameData;
+    private static byte[] previousFrameData;
+    private static byte[] currentFrameData;
+
+    public static Bitmap motionBitmap;
+    private static boolean isProcessingFrames=false;
 
     @Override
     public void onCreate() {
@@ -198,7 +204,7 @@ public class MainService extends Service {
         @Override
         public void onPreviewFrame(byte[] data, Camera camera) {
 
-            if (currentFrameData!=null){
+                        if (currentFrameData!=null){
 
                 previousFrameData=currentFrameData;
 
@@ -206,6 +212,12 @@ public class MainService extends Service {
 
             currentFrameData = data;
             Log.d(TAG, "received " + data.length + " bytes of data");
+
+            if(currentFrameData!=null && previousFrameData!=null && !isProcessingFrames) {
+
+                new ProcessFrames().execute();
+
+            }
 
         }
 
@@ -592,6 +604,26 @@ public class MainService extends Service {
         }
     };
 
+    public static class ProcessFrames extends AsyncTask<Void, Void, Integer> {
+
+        protected Integer doInBackground(Void... dummy) {
+
+            isProcessingFrames=true;
+            motionBitmap = subTractImages();
+            return 0;
+        }
+
+
+        protected void onPostExecute(Integer motionValue) {
+
+            Intent intent = new Intent("CAMERACONTROL___MOTION_PICTURE_READY");
+            broadcastManager.sendBroadcast(intent);
+            isProcessingFrames=false;
+
+        }
+
+    }
+
     public static void sendMessage(final String recipient, final String message, final String sender) {
 
         new AsyncTask<String, String, String>() {
@@ -652,9 +684,37 @@ public class MainService extends Service {
 
     }
 
-    private void subTractImages(){
+    private static Bitmap subTractImages(){
 
-        Bitmap previousFrameBitmap = BitmapFactory.decodeByteArray(previousFrameData, 0, previousFrameData.length);
+        /*
+        Parameters parameters = camera.getParameters();
+        imageFormat = parameters.getPreviewFormat();
+        if (imageFormat == ImageFormat.NV21)
+        {
+
+            Rect rect = new Rect(0, 0, PreviewSizeWidth, PreviewSizeHeight);
+            YuvImage img = new YuvImage(data, ImageFormat.NV21, PreviewSizeWidth, PreviewSizeHeight, null);
+            OutputStream outStream = null;
+            File file = new File(NowPictureFileName);
+            try
+            {
+                outStream = new FileOutputStream(file);
+                img.compressToJpeg(rect, 100, outStream);
+                outStream.flush();
+                outStream.close();
+            }
+            catch (FileNotFoundException e)
+            {
+                e.printStackTrace();
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+        }
+        */
+
+        Bitmap previousFrameBitmap = BitmapFactory.decodeByteArray(previousFrameData,0,previousFrameData.length);
         Bitmap currentFrameBitmap = BitmapFactory.decodeByteArray(currentFrameData, 0, currentFrameData.length);
 
         int width = currentFrameBitmap.getWidth();
@@ -666,6 +726,12 @@ public class MainService extends Service {
 
         Utils.bitmapToMat(previousFrameBitmap, previousFrameMatrix);
         Utils.bitmapToMat(currentFrameBitmap, currentFrameMatrix);
+
+        Core.absdiff(currentFrameMatrix, previousFrameMatrix, frameSubtractionMatrix);
+        Bitmap resultBitmap = Bitmap.createBitmap(width, height, currentFrameBitmap.getConfig());
+        Utils.matToBitmap(frameSubtractionMatrix, resultBitmap);
+
+        return resultBitmap;
 
     };
 
