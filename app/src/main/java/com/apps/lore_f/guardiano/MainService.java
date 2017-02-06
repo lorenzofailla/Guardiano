@@ -52,6 +52,9 @@ import com.google.firebase.storage.UploadTask;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.opencv.android.Utils;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -74,6 +77,7 @@ import java.util.ListIterator;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+
 
 /**
  * Created by Lorenzo Failla on 28/dic/2016.
@@ -121,8 +125,8 @@ public class MainService extends Service {
 
     public static int previewRotation = 0;
 
-    private Bitmap previousFrame;
-    private Bitmap currentFrame;
+    private byte[] previousFrameData;
+    private byte[] currentFrameData;
 
     @Override
     public void onCreate() {
@@ -194,13 +198,13 @@ public class MainService extends Service {
         @Override
         public void onPreviewFrame(byte[] data, Camera camera) {
 
-            if (currentFrame!=null){
+            if (currentFrameData!=null){
 
-                previousFrame=currentFrame;
+                previousFrameData=currentFrameData;
 
             }
 
-            currentFrame = BitmapFactory.decodeByteArray(data, 0, data.length);
+            currentFrameData = data;
             Log.d(TAG, "received " + data.length + " bytes of data");
 
         }
@@ -294,7 +298,6 @@ public class MainService extends Service {
         }
 
     };
-
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -648,5 +651,24 @@ public class MainService extends Service {
         return response.body().string();
 
     }
+
+    private void subTractImages(){
+
+        Bitmap previousFrameBitmap = BitmapFactory.decodeByteArray(previousFrameData, 0, previousFrameData.length);
+        Bitmap currentFrameBitmap = BitmapFactory.decodeByteArray(currentFrameData, 0, currentFrameData.length);
+
+        int width = currentFrameBitmap.getWidth();
+        int height = currentFrameBitmap.getHeight();
+
+        Mat previousFrameMatrix = new Mat(height, width, CvType.CV_8UC4);
+        Mat currentFrameMatrix = new Mat(height, width, CvType.CV_8UC4);
+        Mat frameSubtractionMatrix = new Mat(height, width, CvType.CV_8UC4);
+
+        Utils.bitmapToMat(previousFrameBitmap, previousFrameMatrix);
+        Utils.bitmapToMat(currentFrameBitmap, currentFrameMatrix);
+
+    };
+
+
 
 }
