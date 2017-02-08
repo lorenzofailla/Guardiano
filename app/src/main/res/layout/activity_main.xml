@@ -107,15 +107,30 @@
 
     </LinearLayout>
 
-    <Button
-        android:text="Get motion"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/BTN___MAIN___SEEMOTION" />
+        android:orientation="horizontal">
 
-    <ImageView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/IVW___MAIN___MOTIONPICTURE" />
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="133dp"
+            android:id="@+id/IVW___MAIN___MOTIONPICTURE"
+            android:padding="2dp" />
+
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="133dp"
+            android:id="@+id/IVW___MAIN___CURRENTFRAME"
+            android:padding="2dp" />
+
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="133dp"
+            android:id="@+id/IVW___MAIN___PREVIOUSFRAME"
+            android:padding="2dp" />
+
+    </LinearLayout>
+
 
 </LinearLayout>

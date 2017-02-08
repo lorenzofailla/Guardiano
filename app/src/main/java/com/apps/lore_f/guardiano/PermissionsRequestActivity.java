@@ -10,17 +10,25 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
 
 public class PermissionsRequestActivity extends AppCompatActivity {
 
     private static final int PERMISSION_RECORD_AUDIO = 10;
     private static final int PERMISSION_CAMERA = 20;
     private static final int PERMISSION_WRITE_EXTERNAL_STORAGE = 30;
-    private static final int PERMISSION_INTERNET=40;
+    private static final int PERMISSION_INTERNET = 40;
+
+
+    private static final String TAG = "->PermissionsRequest";
 
     EditText deviceNameEditText;
     ImageButton confirmDeviceNameChangeButton;
@@ -30,7 +38,8 @@ public class PermissionsRequestActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_permissions_request);
 
-
+        // inizializza la libreria OpenCV
+        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_11, this, openCVLoaderCallback);
 
         deviceNameEditText = (EditText) findViewById(R.id.ETX___PERMISSIONSREQUEST___DEVICE_NAME);
 
@@ -42,7 +51,7 @@ public class PermissionsRequestActivity extends AppCompatActivity {
                 if (deviceNameEditText.getText().toString() != "") {
 
 
-                    MainService.deviceDescription=deviceNameEditText.getText().toString();
+                    MainService.deviceDescription = deviceNameEditText.getText().toString();
                     updateSharedPreferences();
                     updateUI();
 
@@ -55,7 +64,7 @@ public class PermissionsRequestActivity extends AppCompatActivity {
 
     }
 
-    private void updateSharedPreferences(){
+    private void updateSharedPreferences() {
 
         SharedPreferences sharedPreferences = getSharedPreferences(getString(R.string.preferenceFileKey), Context.MODE_PRIVATE);
         SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit()
@@ -65,9 +74,30 @@ public class PermissionsRequestActivity extends AppCompatActivity {
 
     }
 
-    private void updateUI(){
+    private BaseLoaderCallback openCVLoaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
 
-        if(SharedFunctions.checkPermissions(this) && MainService.deviceDescription!=""){
+                    Log.i(TAG, "OpenCV loaded successfully");
+                    MainService.isOpenCVLibraryLoaded = true;
+                    updateUI();
+                    break;
+
+                default:
+
+                    super.onManagerConnected(status);
+                    break;
+            }
+
+        }
+
+    };
+
+    private void updateUI() {
+
+        if (SharedFunctions.checkPermissions(this) && MainService.deviceDescription != "" && MainService.isOpenCVLibraryLoaded) {
 
             startActivity(new Intent(this, MainActivity.class));
             finish();
@@ -77,7 +107,7 @@ public class PermissionsRequestActivity extends AppCompatActivity {
 
             askForMissingPermissions();
 
-            if(MainService.deviceDescription==""){
+            if (MainService.deviceDescription == "") {
 
                 deviceNameEditText.setText("device description");
                 deviceNameEditText.selectAll();
@@ -92,13 +122,23 @@ public class PermissionsRequestActivity extends AppCompatActivity {
 
             }
 
-        }
+            TextView openCVLibraryStatus = (TextView) findViewById(R.id.TXV___PERMISSIONSREQUEST___LIBRARY_OPENCV_STATUS);
+            if (MainService.isOpenCVLibraryLoaded) {
 
+                openCVLibraryStatus.setText(R.string.PermissionsRequestActivity_libraryLoaded);
+
+            } else {
+
+                openCVLibraryStatus.setText(R.string.PermissionsRequestActivity_libraryNotLoaded);
+
+            }
+
+        }
 
 
     }
 
-    private void askForMissingPermissions(){
+    private void askForMissingPermissions() {
 
         TextView txvPermissionCameraStatus = (TextView) findViewById(R.id.TXV___PERMISSIONSREQUEST___PERMISSION_CAMERA_STATUS);
         TextView txvPermissionRecordAudioStatus = (TextView) findViewById(R.id.TXV___PERMISSIONSREQUEST___PERMISSION_RECORD_AUDIO_STATUS);
@@ -157,75 +197,6 @@ public class PermissionsRequestActivity extends AppCompatActivity {
 
         updateUI();
 
-        /*
-        switch (requestCode) {
-            case PERMISSION_CAMERA: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-
-                } else {
-
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                }
-                return;
-            }
-
-            case PERMISSION_RECORD_AUDIO: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-
-                } else {
-
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                }
-                return;
-            }
-
-            case PERMISSION_INTERNET: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-
-                } else {
-
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                }
-                return;
-            }
-
-            case PERMISSION_WRITE_EXTERNAL_STORAGE: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
-
-                } else {
-
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
-                }
-                return;
-            }
-            // other 'case' lines to check for other
-            // permissions this app might request
-        }
-        */
     }
 
 

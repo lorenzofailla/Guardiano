@@ -30,6 +30,7 @@ import android.widget.Toast;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+import com.lorenzofailla.utilities.Messaging;
 
 import java.util.Map;
 
@@ -68,7 +69,7 @@ public class MessagingService extends FirebaseMessagingService {
 
                 case "COMMAND_FROM_CLIENT:::ARE_YOU_ALIVE":
 
-                    MainService.sendMessage(messageSender, "RESPONSE_FROM_SERVER:::YES_I_AM_ALIVE", FirebaseInstanceId.getInstance().getToken());
+                    Messaging.sendMessage(messageSender, "RESPONSE_FROM_SERVER:::YES_I_AM_ALIVE", FirebaseInstanceId.getInstance().getToken());
                     break;
 
             }

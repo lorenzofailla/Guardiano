@@ -30,9 +30,12 @@
     <string name="PermissionsRequestActivity_permissionCamera">Camera access</string>
     <string name="PermissionsRequestActivity_permissionRecordAudio">Record audio</string>
     <string name="PermissionsRequestActivity_permissionWriteExternalStorage">Write external storage</string>
+    <string name="PermissionsRequestActivity_libraryOpenCV">Write external storage</string>
 
     <string name="PermissionsRequestActivity_permissionGranted">GRANTED</string>
     <string name="PermissionsRequestActivity_permissionDenied">DENIED</string>
+    <string name="PermissionsRequestActivity_libraryLoaded">LOADED</string>
+    <string name="PermissionsRequestActivity_libraryNotLoaded">NOT LOADED</string>
 
     <string name="PermissionsRequestActivity_deviceDescriptionExplanation">Please enter a description for this device</string>
     <string name="PermissionsRequestActivity_deviceDescriptionLabel">Device name:</string>

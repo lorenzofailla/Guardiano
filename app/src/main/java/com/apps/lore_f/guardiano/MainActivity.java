@@ -68,7 +68,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     SharedPreferences sharedPreferences;
 
-
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
 
         public void onReceive(Context context, Intent intent) {
@@ -93,16 +92,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
                     Button buttonTakeShot = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
                     buttonTakeShot.setEnabled(true);
-
-                    break;
-
-                case "CAMERACONTROL___MOTION_PICTURE_READY":
-
-                    if (MainService.motionBitmap!=null) {
-
-                        ImageView motionPicture = (ImageView) findViewById(R.id.IVW___MAIN___MOTIONPICTURE);
-                        motionPicture.setImageBitmap(MainService.motionBitmap);
-                    }
 
                     break;
 
@@ -160,7 +149,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         // carica le impostazioni memorizzate nelle SharedPreferences
         loadPreferences();
 
-        if(!SharedFunctions.checkPermissions(this) || (MainService.deviceDescription=="")){
+        if(!SharedFunctions.checkPermissions(this) || (MainService.deviceDescription=="") || !MainService.isOpenCVLibraryLoaded){
 
             //
             startActivity(new Intent(this, PermissionsRequestActivity.class));
@@ -228,17 +217,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
         );
 
-        Button computeMotionPictureButton = (Button) findViewById(R.id.BTN___MAIN___SEEMOTION);
-        computeMotionPictureButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                new MainService.ProcessFrames().execute();
-
-            }
-
-        });
-
     }
 
     private void loadPreferences(){
@@ -280,7 +258,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         intentFilter.addAction("CAMERACONTROL___REQUEST_UI_UPDATE");
         intentFilter.addAction("CAMERACONTROL___EVENT_CAMERA_STARTED");
         intentFilter.addAction("CAMERACONTROL___SHOT_TAKEN");
-        intentFilter.addAction("CAMERACONTROL___MOTION_PICTURE_READY");
 
         // inizializzo il BroadcastManager
         broadcastManager = LocalBroadcastManager.getInstance(this);
@@ -291,15 +268,16 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         // aggiorna l'interfaccia utente
         updateUI();
 
-
-        /*final Button btnTakeShot = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
+        /*
+        final Button btnTakeShot = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
         final Button btnStartService = (Button) findViewById(R.id.BTN___MAIN___STARTSERVICE);
         */
 
 
-/*        btnTakeShot.setOnClickListener(this);
+        /*
+        btnTakeShot.setOnClickListener(this);
         btnStartService.setOnClickListener(this);*/
-/*
+        /*
 
         //start your camera
         if (permissionFlag) {
@@ -356,7 +334,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     protected void onPause() {
 
         super.onPause();
-
         broadcastManager.unregisterReceiver(broadcastReceiver);
 
     }
@@ -376,25 +353,32 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             // - ridimensiona l'holder per occupare non più di metà schermo
             // ottiene le dimensioni del display
             int width = getWindowManager().getDefaultDisplay().getWidth();
+
             // ottiene l'indice di rotazione del display
             int rotation = getWindowManager().getDefaultDisplay().getRotation();
             Log.i(TAG, String.format("Display rotation = %d", rotation));
 
             // calcola la rotazione in gradi del display
             int displayOrientationDegrees=0;
+
             switch(rotation){
+
                 case Surface.ROTATION_0:
                     displayOrientationDegrees=90;
                     break;
+
                 case Surface.ROTATION_90:
                     displayOrientationDegrees=0;
                     break;
+
                 case Surface.ROTATION_180:
                     displayOrientationDegrees=270;
                     break;
+
                 case Surface.ROTATION_270:
                     displayOrientationDegrees=180;
                     break;
+
             }
 
             // imposta l'orientamento del display della preview
@@ -408,6 +392,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             cameraPreviewHolder.setFixedSize(width / 2, (int) (width / 2.0 * cameraFrameRatio));
 
         }
+
     }
 
     /*@Override
@@ -485,12 +470,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
 
         }
-    };*/
 
+    };
 
-
-/*
-
+    */
+    /*
 
     private void printLogInfo(String message) {
 
