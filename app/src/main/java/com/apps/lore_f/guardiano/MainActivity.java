@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.hardware.Camera;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -57,8 +58,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     Intent mainService;
 
-    private LocalBroadcastManager broadcastManager;
-
     private SurfaceView cameraPreview;
     private SurfaceHolder cameraPreviewHolder;
 
@@ -68,13 +67,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     SharedPreferences sharedPreferences;
 
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+    MainService.RequestListener requestListener = new MainService.RequestListener() {
+        @Override
+        public void newEvent(String eventName) {
 
-        public void onReceive(Context context, Intent intent) {
-
-            Log.i(TAG, "Received intent: "+intent.getAction());
-
-            switch (intent.getAction()) {
+            switch (eventName) {
 
                 case "CAMERACONTROL___REQUEST_UI_UPDATE":
 
@@ -93,6 +90,22 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     Button buttonTakeShot = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
                     buttonTakeShot.setEnabled(true);
 
+                    break;
+
+                case "CAMERACONTROL___MOTION_LEVEL_CHANGED":
+
+                    TextView motionValueTextView = (TextView) findViewById(R.id.TXV___MAIN___MOTIONLEVEL);
+                    motionValueTextView.setText(String.format("%.3f", MainService.motionLevel));
+
+                    if(MainService.motionLevel>MainService.motionLevelThreshold){
+
+                        motionValueTextView.setTextColor(Color.RED);
+
+                    } else {
+
+                        motionValueTextView.setTextColor(Color.BLACK);
+
+                    }
                     break;
 
             }
@@ -217,6 +230,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 }
         );
 
+        MainService.setRequestListener(requestListener);
+
     }
 
     private void loadPreferences(){
@@ -225,7 +240,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         MainService.deviceDescription = sharedPreferences.getString(getString(R.string.preference___DeviceDescriptionKey), "");
 
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -243,7 +257,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         mainService = new Intent(this, MainService.class);
 
         // avvio il servizio
-        if(!MainService.amIRunning){
+        if (!MainService.amIRunning) {
 
             startService(mainService);
 
@@ -253,88 +267,15 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         }
 
-        // inzializzo i filtri per l'ascolto degli intent
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction("CAMERACONTROL___REQUEST_UI_UPDATE");
-        intentFilter.addAction("CAMERACONTROL___EVENT_CAMERA_STARTED");
-        intentFilter.addAction("CAMERACONTROL___SHOT_TAKEN");
-
-        // inizializzo il BroadcastManager
-        broadcastManager = LocalBroadcastManager.getInstance(this);
-
-        // registro il ricevitore di intent sul BroadcastManager registrato
-        broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
-
         // aggiorna l'interfaccia utente
         updateUI();
 
-        /*
-        final Button btnTakeShot = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
-        final Button btnStartService = (Button) findViewById(R.id.BTN___MAIN___STARTSERVICE);
-        */
-
-
-        /*
-        btnTakeShot.setOnClickListener(this);
-        btnStartService.setOnClickListener(this);*/
-        /*
-
-        //start your camera
-        if (permissionFlag) {
-
-            Log.i(TAG, "Permissions granted.");
-
-            if (safeCameraOpen()) {
-
-                // ritrova i parametri della camera
-                cameraParameters = mCamera.getParameters();
-
-                // ritrova le dimensioni preferenziali della dimensione del video
-                try {
-
-                    videoFrameHeight = cameraParameters.getPreferredPreviewSizeForVideo().height;
-                    videoFrameWidth = cameraParameters.getPreferredPreviewSizeForVideo().width;
-
-                } catch (NullPointerException e) {
-
-                    // set 1280×720
-                    videoFrameHeight = 720;
-                    videoFrameWidth = 1280;
-
-                }
-
-                // messaggio di Log
-                Log.i(TAG, String.format("Preferred video size: %dx%d", videoFrameWidth, videoFrameHeight));
-
-                // imposta la rotazione
-                mCamera.setDisplayOrientation(90);
-
-                assignCameraPreviewSurface();
-                startCameraPreview();
-
-            }
-
-        } else {
-
-            Log.i(TAG, "Missing permissions.");
-
-        }
-*/
-
     }
-
-    /*private void startCameraPreview() {
-
-        // richiesta camera in modalità preview
-        mCamera.startPreview();
-
-    }*/
 
     @Override
     protected void onPause() {
 
         super.onPause();
-        broadcastManager.unregisterReceiver(broadcastReceiver);
 
     }
 
@@ -395,92 +336,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     }
 
-    /*@Override
-    public void onClick(View v) {
-
-        switch (v.getId()) {
-
-            case R.id.BTN___MAIN___STARTVIDEOLOOP:
-*//*
-
-                break;
-*//*
-            case R.id.BTN___MAIN___TAKESHOT:
-
-                Log.i(TAG, "TAKE SHOT requested.");
-
-                // disabilita il pulsante
-                findViewById(R.id.BTN___MAIN___TAKESHOT).setEnabled(false);
-
-                // get an image from the camera
-                mCamera.takePicture(null, null, takeShotCallBack);
-                break;
-
-            case R.id.BTN___MAIN___STARTSERVICE:
-
-                startService(mainService);
-                break;*//*
-
-        }
-
-    }
-*/
-    /*private Camera.PictureCallback takeShotCallBack = new Camera.PictureCallback() {
-
-        @Override
-        public void onPictureTaken(byte[] data, Camera camera) {
-
-            File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
-            if (pictureFile == null) {
-                Log.d(TAG, "Error creating media file, check storage permissions.");
-                return;
-            }
-
-            try {
-
-                FileOutputStream fos = new FileOutputStream(pictureFile);
-                fos.write(data);
-                fos.close();
-
-                Log.i(TAG, "Successfully wrote file " + pictureFile.getAbsolutePath());
-
-
-            } catch (FileNotFoundException e) {
-
-                Log.d(TAG, "File not found: " + e.getMessage());
-
-            } catch (IOException e) {
-
-                Log.d(TAG, "Error accessing file: " + e.getMessage());
-
-            }
-
-            // se necessario, pone nuovamente la camera in modalità preview
-            try {
-
-                startCameraPreview();
-
-                // disabilita il pulsante
-                findViewById(R.id.BTN___MAIN___TAKESHOT).setEnabled(true);
-
-            } catch (Exception e) {
-
-                Log.d(TAG, "Exception raised trying to restart the camera: " + e.getMessage());
-
-            }
-
-        }
-
-    };
-
-    */
-    /*
-
-    private void printLogInfo(String message) {
-
-        Log.i(TAG, message);
-
-    }*/
 
     private void updateUI() {
 

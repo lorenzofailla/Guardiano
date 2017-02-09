@@ -6,6 +6,7 @@ import android.util.Log;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
 
 /**
  * Created by 105053228 on 08/feb/2017.
@@ -27,7 +28,7 @@ public class MotionDetection  {
 
     public interface MotionValueListener {
 
-        public void onMotionValueChanged(double motionValue);
+        void onMotionValueChanged(double motionValue);
 
     }
 
@@ -93,10 +94,10 @@ public class MotionDetection  {
 
     private double computeMotionLevel(byte[] frame1, byte[] frame2) {
 
-        Mat previousFrameMatrix = convertToBitmap(frame1);
-        Mat currentFrameMatrix = convertToBitmap(frame2);
+        Mat previousFrameMatrix = convertToMat(frame1);
+        Mat currentFrameMatrix = convertToMat(frame2);
 
-        Mat frameSubtractionMatrix = new Mat(previewFrameHeight, previewFrameWidth, CvType.CV_8UC1);
+        Mat frameSubtractionMatrix = new Mat(previewFrameHeight, previewFrameWidth, CvType.CV_8UC4);
 
         Core.absdiff(previousFrameMatrix, currentFrameMatrix, frameSubtractionMatrix);
 
@@ -104,12 +105,14 @@ public class MotionDetection  {
 
     }
 
-    private Mat convertToBitmap(byte[] yuvData) {
+    private Mat convertToMat(byte[] yuvData) {
 
-        Mat supportMat = new Mat(previewFrameWidth, previewFrameHeight, CvType.CV_8SC1);
+        Mat supportMat = new Mat(previewFrameWidth, previewFrameHeight, CvType.CV_8UC4);
+        Mat grayMat = new Mat(previewFrameWidth, previewFrameHeight, CvType.CV_8UC4);
         supportMat.put(0,0, yuvData);
+        Imgproc.cvtColor(supportMat, grayMat, Imgproc.COLOR_BGR2GRAY);
 
-        return supportMat;
+        return grayMat;
 
     }
 

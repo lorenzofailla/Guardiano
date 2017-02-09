@@ -27,7 +27,6 @@ public class PermissionsRequestActivity extends AppCompatActivity {
     private static final int PERMISSION_WRITE_EXTERNAL_STORAGE = 30;
     private static final int PERMISSION_INTERNET = 40;
 
-
     private static final String TAG = "->PermissionsRequest";
 
     EditText deviceNameEditText;
@@ -49,7 +48,6 @@ public class PermissionsRequestActivity extends AppCompatActivity {
             public void onClick(View v) {
 
                 if (deviceNameEditText.getText().toString() != "") {
-
 
                     MainService.deviceDescription = deviceNameEditText.getText().toString();
                     updateSharedPreferences();

@@ -15,6 +15,7 @@
 
     <string name="MainActivity_userNameLabel">User name:</string>
     <string name="MainActivity_deviceNameLabel">Device name:</string>
+    <string name="MainActivity_motionLevelLabel">Motion level:</string>
 
     <!-- MainActivity_Menu -->
     <string name="MainActivity_Menu_signOut">Sign out</string>

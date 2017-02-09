@@ -126,7 +126,6 @@ public class MainService extends Service {
     public static boolean isVideoLoopRunning = false;
     public static long standardLoopDuration = 50000;
     public static int previewRotation = 0;
-    public static Bitmap motionBitmap;
 
     private static Handler taskHandler;
     private static LocalBroadcastManager broadcastManager;
@@ -138,14 +137,30 @@ public class MainService extends Service {
     private static int previewFrameHeight;
 
     public static double motionLevel;
+    public static double motionLevelThreshold = 2.0; // TODO: 09/02/2017 settare tramite SharedPreferences
 
-    private MotionDetection motionDetection;
+    public static MotionDetection motionDetection;
+    private static RequestListener requestListener;
+
+    public interface RequestListener{
+
+        void newEvent (String eventName);
+
+    }
+
+    public static void setRequestListener(RequestListener listener){
+
+        requestListener = listener;
+
+    }
 
     MotionDetection.MotionValueListener motionValueListener = new MotionDetection.MotionValueListener() {
         @Override
         public void onMotionValueChanged(double motionValue) {
 
+            // aggiorna il valore di motionLevel
             motionLevel=motionValue;
+            requestListener.newEvent("CAMERACONTROL___MOTION_LEVEL_CHANGED");
             Log.d(TAG, "motion level:" + motionValue);
 
         }
@@ -262,7 +277,7 @@ public class MainService extends Service {
             });
 
             camera.startPreview();
-            broadcastManager.sendBroadcast(new Intent("CAMERACONTROL___SHOT_TAKEN"));
+            requestListener.newEvent("CAMERACONTROL___SHOT_TAKEN");
 
         }
 
@@ -485,7 +500,7 @@ public class MainService extends Service {
 
             }
 
-            broadcastManager.sendBroadcast(new Intent("CAMERACONTROL___EVENT_CAMERA_STARTED"));
+            requestListener.newEvent("CAMERACONTROL___EVENT_CAMERA_STARTED");
 
         }
 
@@ -579,12 +594,11 @@ public class MainService extends Service {
             // ottiene i parametri della camera
             Camera.Parameters cameraParameters = mainCamera.getParameters();
 
-
-
             // imposta i parametri
             cameraParameters.setPreviewFormat(ImageFormat.NV21);
             cameraParameters.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
             cameraParameters.setJpegQuality(100);
+            cameraParameters.setFocusMode(Camera.Parameters.FOCUS_MODE_INFINITY);
 
             previewFrameWidth = cameraParameters.getPreviewSize().width;
             previewFrameHeight = cameraParameters.getPreviewSize().height;
