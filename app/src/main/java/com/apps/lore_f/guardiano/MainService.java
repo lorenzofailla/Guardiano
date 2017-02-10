@@ -52,6 +52,7 @@ import com.google.firebase.messaging.RemoteMessage;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.lorenzofailla.utilities.Files;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -98,8 +99,7 @@ public class MainService extends Service {
     public static final String PICTURES_TAKEN_CHILD = "pictures_taken";
     public static final String ONLINE_DEVICES_CHILD = "online_devices";
     public static final String STORAGE_BUCKET = "gs://guardiano-2c543.appspot.com/";
-    private static final int MEDIA_TYPE_IMAGE = 1;
-    private static final int MEDIA_TYPE_VIDEO = 2;
+
     public static Camera mainCamera = null;
     public static MediaRecorder mediaRecorder;
 
@@ -124,10 +124,10 @@ public class MainService extends Service {
     public static boolean amIRunning = false;
     public static boolean isOpenCVLibraryLoaded = false;
     public static boolean isVideoLoopRunning = false;
-    public static long standardLoopDuration = 50000;
+
     public static int previewRotation = 0;
 
-    private static Handler taskHandler;
+
     private static LocalBroadcastManager broadcastManager;
     private static String dataBaseOnlineDeviceRegistrationEntry = null;
     private static UploadTask uploadTask;
@@ -210,30 +210,15 @@ public class MainService extends Service {
 
     };
 
-    private static Runnable stopRecorder = new Runnable() {
 
-        @Override
-        public void run() {
-
-            // ferma il mediarecorder e richiama il lock della camera
-            mediaRecorder.stop();
-            mainCamera.lock();
-
-            if (isVideoLoopRunning) {
-                setVideoLoopActivity(false);
-            }
-
-        }
-
-    };
 
     private static Camera.PictureCallback takeShotCallback = new Camera.PictureCallback() {
 
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
 
-            File pictureFile;
-            pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
+            File pictureFile = Files.getOutputMediaFile(Files.MEDIA_TYPE_IMAGE);
+
             if (pictureFile == null) {
                 Log.d(TAG, "Error creating media file, check storage permissions.");
                 return;
@@ -338,46 +323,7 @@ public class MainService extends Service {
 
         if (status) {
 
-            // - avvia il loop di registrazione video
-            // inizializza il MediaRecorder
-            mediaRecorder = new MediaRecorder();
 
-            // sblocca la camera
-            mainCamera.unlock();
-
-            // configura il MediaRecorder
-            mediaRecorder.setCamera(mainCamera);
-            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
-            mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-            mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-            mediaRecorder.setVideoEncodingBitRate(4356000);
-            mediaRecorder.setAudioEncodingBitRate(128000);
-            /*mediaRecorder.setVideoSize(videoFrameWidth, videoFrameHeight);*/
-            mediaRecorder.setOutputFile(getOutputMediaFile(MEDIA_TYPE_VIDEO).toString());
-            /*mediaRecorder.setPreviewDisplay(cameraPreviewHolder.getSurface());*/
-
-            try {
-
-                mediaRecorder.prepare();
-                mediaRecorder.start();
-
-                Log.i(TAG, "Video loop started");
-
-                isVideoLoopRunning = true;
-
-            } catch (IOException e) {
-
-                Log.e(TAG, "Error preparing the MediaRecorder");
-
-            }
-
-            // imposta il valore del flag a true
-            isVideoLoopRunning = true;
-
-            // richiede il blocco video
-            taskHandler.postAtTime(stopRecorder, SystemClock.uptimeMillis() + standardLoopDuration);
 
         } else {
 
@@ -386,51 +332,8 @@ public class MainService extends Service {
 
         }
 
-        broadcastManager.sendBroadcast(new Intent("CAMERACONTROL___REQUEST_UI_UPDATE"));
+        requestListener.newEvent("CAMERACONTROL___REQUEST_UI_UPDATE");
 
-    }
-
-    /**
-     * Create a file Uri for saving an image or video
-     */
-    private static Uri getOutputMediaFileUri(int type) {
-        return Uri.fromFile(getOutputMediaFile(type));
-    }
-
-    /**
-     * Create a File for saving an image or video
-     */
-    private static File getOutputMediaFile(int type) {
-        // To be safe, you should check that the SDCard is mounted
-        // using Environment.getExternalStorageState() before doing this.
-
-        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES), "MyCameraApp");
-        // This location works best if you want the created images to be shared
-        // between applications and persist after your app has been uninstalled.
-
-        // Create the storage directory if it does not exist
-        if (!mediaStorageDir.exists()) {
-            if (!mediaStorageDir.mkdirs()) {
-                Log.d("MyCameraApp", "failed to create directory");
-                return null;
-            }
-        }
-
-        // Create a media file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        File mediaFile;
-        if (type == MEDIA_TYPE_IMAGE) {
-            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "IMG_" + timeStamp + ".jpg");
-        } else if (type == MEDIA_TYPE_VIDEO) {
-            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "VID_" + timeStamp + ".mp4");
-        } else {
-            return null;
-        }
-
-        return mediaFile;
     }
 
     public static void takeShot() {
@@ -468,9 +371,6 @@ public class MainService extends Service {
 
         // registro il ricevitore di intent sul BroadcastManager registrato
         broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
-
-        // inizializzo taskHandler
-        taskHandler = new Handler();
 
         // inizializzo il database di Firebase
         databaseReference = FirebaseDatabase.getInstance().getReference();
@@ -598,12 +498,11 @@ public class MainService extends Service {
             cameraParameters.setPreviewFormat(ImageFormat.NV21);
             cameraParameters.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
             cameraParameters.setJpegQuality(100);
-            cameraParameters.setFocusMode(Camera.Parameters.FOCUS_MODE_INFINITY);
 
             previewFrameWidth = cameraParameters.getPreviewSize().width;
             previewFrameHeight = cameraParameters.getPreviewSize().height;
 
-            cameraParameters.setPreviewSize( previewFrameWidth,previewFrameHeight);
+            cameraParameters.setPreviewSize(previewFrameWidth,previewFrameHeight);
             mainCamera.setParameters(cameraParameters);
 
         }
