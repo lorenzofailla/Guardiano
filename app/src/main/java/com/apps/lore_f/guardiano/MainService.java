@@ -127,7 +127,6 @@ public class MainService extends Service {
 
     public static int previewRotation = 0;
 
-
     private static LocalBroadcastManager broadcastManager;
     private static String dataBaseOnlineDeviceRegistrationEntry = null;
     private static UploadTask uploadTask;
@@ -142,6 +141,16 @@ public class MainService extends Service {
     public static MotionDetection motionDetection;
     private static RequestListener requestListener;
 
+    public static VideoLooper videoLooper;
+    private static VideoLooper.OnVideoLooperStatusChangedListener onVideoLooperStatusChangedListener = new VideoLooper.OnVideoLooperStatusChangedListener() {
+        @Override
+        public void onStatusChanged(int status) {
+
+            requestListener.newEvent("CAMERACONTROL___REQUEST_UI_UPDATE");
+
+        }
+    };
+
     public interface RequestListener{
 
         void newEvent (String eventName);
@@ -154,7 +163,8 @@ public class MainService extends Service {
 
     }
 
-    MotionDetection.MotionValueListener motionValueListener = new MotionDetection.MotionValueListener() {
+    MotionDetection.MotionDetectionOnValueChangeListener motionDetectionOnValueChangeListener = new MotionDetection.MotionDetectionOnValueChangeListener() {
+
         @Override
         public void onMotionValueChanged(double motionValue) {
 
@@ -162,6 +172,11 @@ public class MainService extends Service {
             motionLevel=motionValue;
             requestListener.newEvent("CAMERACONTROL___MOTION_LEVEL_CHANGED");
             Log.d(TAG, "motion level:" + motionValue);
+
+        }
+
+        @Override
+        public void onThresholdExceeded() {
 
         }
 
@@ -384,8 +399,10 @@ public class MainService extends Service {
 
             configureCamera();
 
-            motionDetection=new MotionDetection(previewFrameWidth,previewFrameHeight);
-            motionDetection.setMotionValueChanged(motionValueListener);
+            videoLooper = new VideoLooper(mainCamera);
+
+            motionDetection=new MotionDetection(previewFrameWidth,previewFrameHeight,motionLevelThreshold);
+            motionDetection.setMotionDetectionOnValueChangeListener(motionDetectionOnValueChangeListener);
             mainCamera.setPreviewCallback(previewCallback);
             mainCamera.startPreview();
 

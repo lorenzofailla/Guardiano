@@ -23,7 +23,7 @@ public class VideoLooper {
     public static final int STATUS_IDLE = 0;
 
     private int currentStatus;
-    private OnStatusChangedListener onStatusChangedListener;
+    private OnVideoLooperStatusChangedListener onVideoLooperStatusChangedListener;
 
     private MediaRecorder mediaRecorder;
 
@@ -32,15 +32,15 @@ public class VideoLooper {
     private Handler taskHandler;
     private File currentFileName;
 
-    public interface OnStatusChangedListener{
+    public interface OnVideoLooperStatusChangedListener{
 
         public void onStatusChanged(int status);
 
     }
 
-    public void setOnStatusChangedListener(OnStatusChangedListener listener){
+    public void setOnVideoLooperStatusChangedListener(OnVideoLooperStatusChangedListener listener){
 
-        onStatusChangedListener=listener;
+        onVideoLooperStatusChangedListener=listener;
 
     }
 
@@ -95,10 +95,8 @@ public class VideoLooper {
 
             }
 
-        /*
-        // richiede il blocco video
-        taskHandler.postAtTime(stopRecorder, SystemClock.uptimeMillis() + standardLoopDuration);
-        */
+        taskHandler.postAtTime(callLoop, SystemClock.uptimeMillis() + standardLoopDuration);
+
 
         } else {
 
@@ -148,6 +146,8 @@ public class VideoLooper {
 
     public void stop(){
 
+        taskHandler.removeCallbacks(callLoop);
+
         // ferma il mediarecorder e richiama il lock della camera
         mediaRecorder.stop();
         camera.lock();
@@ -161,7 +161,7 @@ public class VideoLooper {
         if(currentStatus!=newStatus){
 
             currentStatus=newStatus;
-            onStatusChangedListener.onStatusChanged(currentStatus);
+            onVideoLooperStatusChangedListener.onStatusChanged(currentStatus);
 
         }
 

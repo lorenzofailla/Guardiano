@@ -95,7 +95,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                 case "CAMERACONTROL___MOTION_LEVEL_CHANGED":
 
                     TextView motionValueTextView = (TextView) findViewById(R.id.TXV___MAIN___MOTIONLEVEL);
-                    motionValueTextView.setText(String.format("%.3f", MainService.motionLevel));
+                    motionValueTextView.setText(String.format("%.3f", MainService.motionDetection.currentMotionValue));
 
                     if(MainService.motionLevel>MainService.motionLevelThreshold){
 

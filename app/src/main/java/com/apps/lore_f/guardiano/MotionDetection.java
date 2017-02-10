@@ -24,20 +24,29 @@ public class MotionDetection  {
     private byte[] previousFrame;
     private byte[] currentFrame;
 
-    private MotionValueListener motionValueListener;
+    private double motionThresholdValue=2.0;
+    public double currentMotionValue;
 
-    public interface MotionValueListener {
+    private MotionDetectionOnValueChangeListener motionDetectionOnValueChangeListener;
+
+    public interface MotionDetectionOnValueChangeListener {
 
         void onMotionValueChanged(double motionValue);
+        void onThresholdExceeded();
 
     }
 
-    public void setMotionValueChanged(MotionValueListener listener) {
+    public void setMotionDetectionOnValueChangeListener(MotionDetectionOnValueChangeListener listener) {
 
-        motionValueListener = listener;
+        motionDetectionOnValueChangeListener = listener;
 
     }
 
+    public void setMotionThresholdValue(double thresholdValue){
+
+        motionThresholdValue=thresholdValue;
+
+    }
     public void enterFrame(byte[] frameData){
 
         if (currentFrame != null) {
@@ -73,6 +82,16 @@ public class MotionDetection  {
 
     }
 
+    public MotionDetection(int frameWidth, int frameHeight, double thresholdValue){
+
+        previewFrameWidth=frameWidth;
+        previewFrameHeight=frameHeight;
+        motionLevelBase=1.0*frameWidth*frameHeight;
+        isBusy=false;
+        setMotionThresholdValue(thresholdValue);
+
+    }
+
     private class FrameMotionDetector extends AsyncTask<Void, Void, Double> {
 
         protected Double doInBackground(Void... dummy) {
@@ -86,7 +105,14 @@ public class MotionDetection  {
         protected void onPostExecute(Double motionValue) {
 
             isBusy = false;
-            motionValueListener.onMotionValueChanged(motionValue);
+            currentMotionValue = motionValue;
+            motionDetectionOnValueChangeListener.onMotionValueChanged(currentMotionValue);
+
+            if (currentMotionValue>motionThresholdValue){
+
+                motionDetectionOnValueChangeListener.onThresholdExceeded();
+
+            }
 
         }
 
