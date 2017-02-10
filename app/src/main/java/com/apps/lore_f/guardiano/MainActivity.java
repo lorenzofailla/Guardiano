@@ -97,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
                     TextView motionValueTextView = (TextView) findViewById(R.id.TXV___MAIN___MOTIONLEVEL);
                     motionValueTextView.setText(String.format("%.3f", MainService.motionDetection.currentMotionValue));
 
-                    if(MainService.motionLevel>MainService.motionLevelThreshold){
+                    if (MainService.motionLevel > MainService.motionLevelThreshold) {
 
                         motionValueTextView.setTextColor(Color.RED);
 
@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
-        switch(item.getItemId()){
+        switch (item.getItemId()) {
 
             case R.id.sign_out_menuEntry:
 
@@ -162,7 +162,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         // carica le impostazioni memorizzate nelle SharedPreferences
         loadPreferences();
 
-        if(!SharedFunctions.checkPermissions(this) || (MainService.deviceDescription=="") || !MainService.isOpenCVLibraryLoaded){
+        if (!SharedFunctions.checkPermissions(this) || (MainService.deviceDescription == "") || !MainService.isOpenCVLibraryLoaded) {
 
             //
             startActivity(new Intent(this, PermissionsRequestActivity.class));
@@ -171,12 +171,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         }
         // inizializza il FirebaseAuth
-        firebaseAuth=FirebaseAuth.getInstance();
+        firebaseAuth = FirebaseAuth.getInstance();
 
         // ottiene l'user corrente
         firebaseUser = firebaseAuth.getCurrentUser();
 
-        if(firebaseUser==null){
+        if (firebaseUser == null) {
             // autenticazione non effettuata
 
             // lancia la SignInActivity e termina l'attività corrente
@@ -186,11 +186,11 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         }
 
-        TextView userNameTextView = (TextView) findViewById(R.id.TXV___MAIN___USERNAME) ;
-        TextView deviceNameTextView = (TextView) findViewById(R.id.TXV___MAIN___DEVICENAME) ;
+        TextView userNameTextView = (TextView) findViewById(R.id.TXV___MAIN___USERNAME);
+        TextView deviceNameTextView = (TextView) findViewById(R.id.TXV___MAIN___DEVICENAME);
 
-        userNameTextView.setText (firebaseAuth.getCurrentUser().getEmail());
-        deviceNameTextView.setText (MainService.deviceDescription);
+        userNameTextView.setText(firebaseAuth.getCurrentUser().getEmail());
+        deviceNameTextView.setText(MainService.deviceDescription);
 
         googleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this /* FragmentActivity */, this /* OnConnectionFailedListener */)
@@ -218,23 +218,30 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         // inizializzo handlers ai drawable
         Button videoLoopButton = (Button) findViewById(R.id.BTN___MAIN___STARTVIDEOLOOP);
-        videoLoopButton.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
 
-                        // il loop è avviato, manda la richiesta per fermare
-                        MainService.setVideoLoopActivity(!MainService.isVideoLoopRunning);
+        videoLoopButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
 
-                    }
+                if (MainService.videoLooper.currentStatus == VideoLooper.STATUS_IDLE) {
+
+                    MainService.videoLooper.start();
+
+                } else {
+
+                    MainService.videoLooper.stop();
+
                 }
-        );
+
+            }
+
+        });
 
         MainService.setRequestListener(requestListener);
 
     }
 
-    private void loadPreferences(){
+    private void loadPreferences() {
 
         // ottiene le preferenze
         MainService.deviceDescription = sharedPreferences.getString(getString(R.string.preference___DeviceDescriptionKey), "");
@@ -300,24 +307,24 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             Log.i(TAG, String.format("Display rotation = %d", rotation));
 
             // calcola la rotazione in gradi del display
-            int displayOrientationDegrees=0;
+            int displayOrientationDegrees = 0;
 
-            switch(rotation){
+            switch (rotation) {
 
                 case Surface.ROTATION_0:
-                    displayOrientationDegrees=90;
+                    displayOrientationDegrees = 90;
                     break;
 
                 case Surface.ROTATION_90:
-                    displayOrientationDegrees=0;
+                    displayOrientationDegrees = 0;
                     break;
 
                 case Surface.ROTATION_180:
-                    displayOrientationDegrees=270;
+                    displayOrientationDegrees = 270;
                     break;
 
                 case Surface.ROTATION_270:
-                    displayOrientationDegrees=180;
+                    displayOrientationDegrees = 180;
                     break;
 
             }
@@ -358,18 +365,18 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
     }
 
-    private void updateStatusTextView(){
+    private void updateStatusTextView() {
 
         TextView statusTextView = (TextView) findViewById(R.id.TXV___MAIN___STATUS);
         String textViewMessage;
 
-        if(MainService.isVideoLoopRunning){
+        if (MainService.isVideoLoopRunning) {
 
-            textViewMessage=getString(R.string.MainActivity_videoLoopRunning);
+            textViewMessage = getString(R.string.MainActivity_videoLoopRunning);
 
         } else {
 
-            textViewMessage=getString(R.string.MainActivity_videoLoopPaused);
+            textViewMessage = getString(R.string.MainActivity_videoLoopPaused);
 
         }
 
@@ -381,28 +388,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         Log.i(TAG, "Running callback: surfaceCreated");
 
-         if(MainService.mainCamera!=null) {
-
-             try {
-
-                 MainService.mainCamera.setPreviewDisplay(holder);
-
-             } catch (IOException e) {
-
-                 e.printStackTrace();
-
-             }
-
-         }
-
-    }
-
-    @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
-        Log.i(TAG, "Running callback: surfaceChanged");
-
-        if(MainService.mainCamera!=null) {
+        if (MainService.mainCamera != null) {
 
             try {
 
@@ -415,6 +401,28 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             }
 
         }
+
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+        Log.i(TAG, "Running callback: surfaceChanged");
+
+        if (MainService.mainCamera != null) {
+
+            try {
+
+                MainService.mainCamera.setPreviewDisplay(holder);
+
+            } catch (IOException e) {
+
+                e.printStackTrace();
+
+            }
+
+        }
+
     }
 
     @Override

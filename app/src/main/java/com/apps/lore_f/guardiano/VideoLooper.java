@@ -22,7 +22,7 @@ public class VideoLooper {
     public static final int STATUS_RUNNING = 1;
     public static final int STATUS_IDLE = 0;
 
-    private int currentStatus;
+    public int currentStatus;
     private OnVideoLooperStatusChangedListener onVideoLooperStatusChangedListener;
 
     private MediaRecorder mediaRecorder;
@@ -32,33 +32,33 @@ public class VideoLooper {
     private Handler taskHandler;
     private File currentFileName;
 
-    public interface OnVideoLooperStatusChangedListener{
+    public interface OnVideoLooperStatusChangedListener {
 
-        public void onStatusChanged(int status);
+        void onStatusChanged(int status);
 
     }
 
-    public void setOnVideoLooperStatusChangedListener(OnVideoLooperStatusChangedListener listener){
+    public void setOnVideoLooperStatusChangedListener(OnVideoLooperStatusChangedListener listener) {
 
-        onVideoLooperStatusChangedListener=listener;
+        onVideoLooperStatusChangedListener = listener;
 
     }
 
     private Camera camera;
 
-    public VideoLooper(Camera videoCamera){
+    public VideoLooper(Camera videoCamera) {
 
         camera = videoCamera;
-        currentStatus=STATUS_IDLE;
-        taskHandler=new Handler();
+        currentStatus = STATUS_IDLE;
+        taskHandler = new Handler();
 
     }
 
-    public void start(){
+    public void start() {
 
         currentFileName = Files.getOutputMediaFile(Files.MEDIA_TYPE_VIDEO);
 
-        if(currentFileName!=null) {
+        if (currentFileName != null) {
 
             // - avvia il loop di registrazione video
             // inizializza il MediaRecorder
@@ -95,7 +95,7 @@ public class VideoLooper {
 
             }
 
-        taskHandler.postAtTime(callLoop, SystemClock.uptimeMillis() + standardLoopDuration);
+            taskHandler.postAtTime(callLoop, SystemClock.uptimeMillis() + standardLoopDuration);
 
 
         } else {
@@ -106,34 +106,25 @@ public class VideoLooper {
 
     }
 
-    private Runnable callLoop=new Runnable() {
+    private Runnable callLoop = new Runnable() {
         @Override
         public void run() {
             loop();
         }
     };
 
-    public void loop(){
+    public void loop() {
 
         // rinnova il file dove salvare la sequenza video
         currentFileName = Files.getOutputMediaFile(Files.MEDIA_TYPE_VIDEO);
 
-        if (currentFileName!=null) {
+        if (currentFileName != null) {
             mediaRecorder.stop();
             mediaRecorder.setOutputFile(currentFileName.getAbsolutePath());
 
-            try {
+            mediaRecorder.start();
+            Log.i(TAG, "Video loop sequenced");
 
-                mediaRecorder.prepare();
-                mediaRecorder.start();
-
-                Log.i(TAG, "Video loop sequenced");
-
-            } catch (IOException e) {
-
-                Log.e(TAG, "Error preparing the MediaRecorder");
-                stop();
-            }
 
         } else {
 
@@ -144,7 +135,7 @@ public class VideoLooper {
 
     }
 
-    public void stop(){
+    public void stop() {
 
         taskHandler.removeCallbacks(callLoop);
 
@@ -156,11 +147,11 @@ public class VideoLooper {
 
     }
 
-    private void changeCurrentStatus(int newStatus){
+    private void changeCurrentStatus(int newStatus) {
 
-        if(currentStatus!=newStatus){
+        if (currentStatus != newStatus) {
 
-            currentStatus=newStatus;
+            currentStatus = newStatus;
             onVideoLooperStatusChangedListener.onStatusChanged(currentStatus);
 
         }

@@ -1,6 +1,5 @@
 package com.apps.lore_f.guardiano;
 
-import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -9,36 +8,20 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
-import android.graphics.Rect;
-import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.media.MediaRecorder;
 import android.net.Uri;
-import android.os.AsyncTask;
-import android.os.Environment;
-import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
-import android.os.SystemClock;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Button;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -46,49 +29,17 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.iid.FirebaseInstanceId;
-import com.google.firebase.iid.FirebaseInstanceIdService;
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.RemoteMessage;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.lorenzofailla.utilities.Files;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.core.Core;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.Scalar;
-import org.opencv.imgproc.Imgproc;
-
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.lang.reflect.Array;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-
 
 /**
  * Created by Lorenzo Failla on 28/dic/2016.
@@ -142,13 +93,20 @@ public class MainService extends Service {
     private static RequestListener requestListener;
 
     public static VideoLooper videoLooper;
+
+    public static final String REQUEST_UI_UPDATE = "CAMERACONTROL___REQUEST_UI_UPDATE";
+    public static final String MOTION_LEVEL_CHANGED = "CAMERACONTROL___MOTION_LEVEL_CHANGED";
+    public static final String SHOT_TAKEN = "CAMERACONTROL___SHOT_TAKEN";
+    public static final String CAMERA_STARTED = "CAMERACONTROL___CAMERA_STARTED";
+
     private static VideoLooper.OnVideoLooperStatusChangedListener onVideoLooperStatusChangedListener = new VideoLooper.OnVideoLooperStatusChangedListener() {
         @Override
         public void onStatusChanged(int status) {
 
-            requestListener.newEvent("CAMERACONTROL___REQUEST_UI_UPDATE");
+            requestListener.newEvent(REQUEST_UI_UPDATE);
 
         }
+
     };
 
     public interface RequestListener{
@@ -170,7 +128,7 @@ public class MainService extends Service {
 
             // aggiorna il valore di motionLevel
             motionLevel=motionValue;
-            requestListener.newEvent("CAMERACONTROL___MOTION_LEVEL_CHANGED");
+            requestListener.newEvent(MOTION_LEVEL_CHANGED);
             Log.d(TAG, "motion level:" + motionValue);
 
         }
@@ -277,7 +235,7 @@ public class MainService extends Service {
             });
 
             camera.startPreview();
-            requestListener.newEvent("CAMERACONTROL___SHOT_TAKEN");
+            requestListener.newEvent(SHOT_TAKEN);
 
         }
 
@@ -334,23 +292,6 @@ public class MainService extends Service {
 
     }
 
-    public static void setVideoLoopActivity(boolean status) {
-
-        if (status) {
-
-
-
-        } else {
-
-            // ferma il loop di registrazione video
-            isVideoLoopRunning = false;
-
-        }
-
-        requestListener.newEvent("CAMERACONTROL___REQUEST_UI_UPDATE");
-
-    }
-
     public static void takeShot() {
             /*
             cattura un fotogramma dalla camera
@@ -400,7 +341,7 @@ public class MainService extends Service {
             configureCamera();
 
             videoLooper = new VideoLooper(mainCamera);
-
+            videoLooper.setOnVideoLooperStatusChangedListener(onVideoLooperStatusChangedListener);
             motionDetection=new MotionDetection(previewFrameWidth,previewFrameHeight,motionLevelThreshold);
             motionDetection.setMotionDetectionOnValueChangeListener(motionDetectionOnValueChangeListener);
             mainCamera.setPreviewCallback(previewCallback);
@@ -417,7 +358,7 @@ public class MainService extends Service {
 
             }
 
-            requestListener.newEvent("CAMERACONTROL___EVENT_CAMERA_STARTED");
+            requestListener.newEvent(CAMERA_STARTED);
 
         }
 
