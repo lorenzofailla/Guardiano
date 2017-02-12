@@ -12,11 +12,11 @@ import org.opencv.imgproc.Imgproc;
  * Created by 105053228 on 08/feb/2017.
  */
 
-public class MotionDetection  {
+class MotionDetection  {
 
     private static final String TAG = "MotionDetection";
 
-    public boolean isBusy;
+    private boolean isBusy;
 
     private int previewFrameHeight;
     private int previewFrameWidth;
@@ -25,29 +25,30 @@ public class MotionDetection  {
     private byte[] currentFrame;
 
     private double motionThresholdValue=2.0;
-    public double currentMotionValue;
+    double currentMotionValue;
 
     private MotionDetectionOnValueChangeListener motionDetectionOnValueChangeListener;
 
-    public interface MotionDetectionOnValueChangeListener {
+    interface MotionDetectionOnValueChangeListener {
 
         void onMotionValueChanged(double motionValue);
         void onThresholdExceeded();
 
     }
 
-    public void setMotionDetectionOnValueChangeListener(MotionDetectionOnValueChangeListener listener) {
+    void setMotionDetectionOnValueChangeListener(MotionDetectionOnValueChangeListener listener) {
 
         motionDetectionOnValueChangeListener = listener;
 
     }
 
-    public void setMotionThresholdValue(double thresholdValue){
+    private void setMotionThresholdValue(double thresholdValue){
 
         motionThresholdValue=thresholdValue;
 
     }
-    public void enterFrame(byte[] frameData){
+
+    void enterFrame(byte[] frameData){
 
         if (currentFrame != null) {
 
@@ -73,7 +74,7 @@ public class MotionDetection  {
 
     }
 
-    public MotionDetection(int frameWidth, int frameHeight){
+    MotionDetection(int frameWidth, int frameHeight){
 
         previewFrameWidth=frameWidth;
         previewFrameHeight=frameHeight;
@@ -82,7 +83,7 @@ public class MotionDetection  {
 
     }
 
-    public MotionDetection(int frameWidth, int frameHeight, double thresholdValue){
+    MotionDetection(int frameWidth, int frameHeight, double thresholdValue){
 
         previewFrameWidth=frameWidth;
         previewFrameHeight=frameHeight;
@@ -94,6 +95,7 @@ public class MotionDetection  {
 
     private class FrameMotionDetector extends AsyncTask<Void, Void, Double> {
 
+        @Override
         protected Double doInBackground(Void... dummy) {
 
             isBusy = true;
@@ -102,6 +104,7 @@ public class MotionDetection  {
 
         }
 
+        @Override
         protected void onPostExecute(Double motionValue) {
 
             isBusy = false;

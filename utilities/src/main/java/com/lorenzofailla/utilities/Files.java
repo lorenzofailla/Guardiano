@@ -1,10 +1,14 @@
 package com.lorenzofailla.utilities;
 
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Environment;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -55,6 +59,29 @@ public class Files {
         }
 
         return mediaFile;
+    }
+
+    public static byte[] getFileDataBytes(File inputFile){
+
+        byte[] dataStream = new byte[0];
+
+        try {
+
+            FileInputStream fileInputStream = new FileInputStream(inputFile);
+            fileInputStream.read(dataStream);
+
+        } catch (FileNotFoundException e) {
+
+            e.printStackTrace();
+
+        } catch (IOException e) {
+
+            e.printStackTrace();
+
+        }
+
+        return dataStream;
+
     }
 
 }

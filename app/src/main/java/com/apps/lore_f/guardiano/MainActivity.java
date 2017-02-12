@@ -73,26 +73,26 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
             switch (eventName) {
 
-                case "CAMERACONTROL___REQUEST_UI_UPDATE":
+                case MainService.REQUEST_UI_UPDATE:
 
                     updateUI();
 
                     break;
 
-                case "CAMERACONTROL___EVENT_CAMERA_STARTED":
+                case MainService.CAMERA_STARTED:
 
                     assignCameraPreviewSurface();
 
                     break;
 
-                case "CAMERACONTROL___SHOT_TAKEN":
+                case MainService.SHOT_TAKEN:
 
                     Button buttonTakeShot = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
                     buttonTakeShot.setEnabled(true);
 
                     break;
 
-                case "CAMERACONTROL___MOTION_LEVEL_CHANGED":
+                case MainService.MOTION_LEVEL_CHANGED:
 
                     TextView motionValueTextView = (TextView) findViewById(R.id.TXV___MAIN___MOTIONLEVEL);
                     motionValueTextView.setText(String.format("%.3f", MainService.motionDetection.currentMotionValue));
@@ -349,19 +349,29 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         // ottiene l'handler al pulsante per avviare/fermare il loop del video
         Button videoLoopButton = (Button) findViewById(R.id.BTN___MAIN___STARTVIDEOLOOP);
 
-        if (MainService.isVideoLoopRunning) {
+        if (MainService.videoLooper!=null) {
 
-            // video loop is running
-            videoLoopButton.setText(R.string.MainActivity_buttonStopVideoLoop);
+            videoLoopButton.setEnabled(true);
+
+            if (MainService.videoLooper.currentStatus == VideoLooper.STATUS_RUNNING) {
+
+                // video loop is running
+                videoLoopButton.setText(R.string.MainActivity_buttonStopVideoLoop);
+
+            } else {
+
+                // video loop is not running
+                videoLoopButton.setText(R.string.MainActivity_buttonStartVideoLoop);
+
+            }
+
+            updateStatusTextView();
 
         } else {
 
-            // video loop is not running
-            videoLoopButton.setText(R.string.MainActivity_buttonStartVideoLoop);
+            videoLoopButton.setEnabled(false);
 
         }
-
-        updateStatusTextView();
 
     }
 
@@ -370,7 +380,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         TextView statusTextView = (TextView) findViewById(R.id.TXV___MAIN___STATUS);
         String textViewMessage;
 
-        if (MainService.isVideoLoopRunning) {
+        if (MainService.videoLooper.currentStatus==VideoLooper.STATUS_RUNNING) {
 
             textViewMessage = getString(R.string.MainActivity_videoLoopRunning);
 

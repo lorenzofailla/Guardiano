@@ -14,12 +14,15 @@ import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -33,6 +36,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.lorenzofailla.utilities.Files;
+import com.lorenzofailla.utilities.Messaging;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -80,14 +84,14 @@ public class MainService extends Service {
 
     private static LocalBroadcastManager broadcastManager;
     private static String dataBaseOnlineDeviceRegistrationEntry = null;
-    private static UploadTask uploadTask;
+
     private static String TAG = "->MainService";
 
     private static int previewFrameWidth;
     private static int previewFrameHeight;
 
     public static double motionLevel;
-    public static double motionLevelThreshold = 2.0; // TODO: 09/02/2017 settare tramite SharedPreferences
+    public static double motionLevelThreshold = 0.7; // TODO: 09/02/2017 settare tramite SharedPreferences
 
     public static MotionDetection motionDetection;
     private static RequestListener requestListener;
@@ -104,6 +108,44 @@ public class MainService extends Service {
         public void onStatusChanged(int status) {
 
             requestListener.newEvent(REQUEST_UI_UPDATE);
+
+        }
+
+        @Override
+        public void onCreated() {
+
+            requestListener.newEvent(REQUEST_UI_UPDATE);
+
+        }
+
+        @Override
+        public void loopKept(File resultFile) {
+
+            /* ottiene un array di byte contenente i dati del file specificato */
+            StorageReference videoToBeUploaded = storageReference.child(firebaseUser.getUid() + "/" + "pictures_taken/" + resultFile.getName());
+            UploadTask uploadTask = videoToBeUploaded.putBytes(Files.getFileDataBytes(resultFile));
+
+            uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                    // Handle successful uploads on complete
+                    Uri downloadUrl = taskSnapshot.getMetadata().getDownloadUrl();
+
+                    PictureTakenMessage pictureTakenMessage = new PictureTakenMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), "New video sequence captured", downloadUrl.toString(), deviceDescription);
+                    databaseReference.child(firebaseUser.getUid()).child(PICTURES_TAKEN_CHILD).push().setValue(pictureTakenMessage).addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+
+                            //Messaging.sendMessage();
+
+                        }
+
+                    });
+
+                }
+
+            });
+
 
         }
 
@@ -129,12 +171,14 @@ public class MainService extends Service {
             // aggiorna il valore di motionLevel
             motionLevel=motionValue;
             requestListener.newEvent(MOTION_LEVEL_CHANGED);
-            Log.d(TAG, "motion level:" + motionValue);
+            Log.d(TAG, "motion level: " + motionValue);
 
         }
 
         @Override
         public void onThresholdExceeded() {
+
+            videoLooper.delayLoopAndKeepVideo();
 
         }
 
@@ -220,7 +264,7 @@ public class MainService extends Service {
             String pictureFilename = "IMG_" + deviceDescription + "_" + timeStamp + ".jpg";
 
             StorageReference pictureToBeUploaded = storageReference.child(firebaseUser.getUid() + "/" + "pictures_taken/" + pictureFilename);
-            uploadTask = pictureToBeUploaded.putBytes(data);
+            UploadTask uploadTask = pictureToBeUploaded.putBytes(data);
 
             uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                 @Override
@@ -454,8 +498,10 @@ public class MainService extends Service {
 
             // imposta i parametri
             cameraParameters.setPreviewFormat(ImageFormat.NV21);
-            cameraParameters.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
+            cameraParameters.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
             cameraParameters.setJpegQuality(100);
+
+            /*mainCamera.enableShutterSound(false);*/
 
             previewFrameWidth = cameraParameters.getPreviewSize().width;
             previewFrameHeight = cameraParameters.getPreviewSize().height;
