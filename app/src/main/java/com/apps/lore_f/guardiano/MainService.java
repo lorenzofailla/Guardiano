@@ -121,7 +121,6 @@ public class MainService extends Service {
         @Override
         public void loopKept(File resultFile) {
 
-            /* ottiene un array di byte contenente i dati del file specificato */
             StorageReference videoToBeUploaded = storageReference.child(firebaseUser.getUid() + "/" + "pictures_taken/" + resultFile.getName());
             UploadTask uploadTask = videoToBeUploaded.putBytes(Files.getFileDataBytes(resultFile));
 
@@ -145,7 +144,6 @@ public class MainService extends Service {
                 }
 
             });
-
 
         }
 
@@ -171,7 +169,7 @@ public class MainService extends Service {
             // aggiorna il valore di motionLevel
             motionLevel=motionValue;
             requestListener.newEvent(MOTION_LEVEL_CHANGED);
-            Log.d(TAG, "motion level: " + motionValue);
+            /* Log.d(TAG, "motion level: " + motionValue); */
 
         }
 
@@ -179,7 +177,7 @@ public class MainService extends Service {
         public void onThresholdExceeded() {
 
             videoLooper.delayLoopAndKeepVideo();
-
+            Log.d(TAG, "motion detected");
         }
 
     };

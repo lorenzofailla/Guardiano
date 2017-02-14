@@ -56,8 +56,6 @@ import static com.apps.lore_f.guardiano.MainService.firebaseUser;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, GoogleApiClient.OnConnectionFailedListener {
 
-    Intent mainService;
-
     private SurfaceView cameraPreview;
     private SurfaceHolder cameraPreviewHolder;
 
@@ -120,7 +118,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
             case R.id.sign_out_menuEntry:
 
-                stopService(mainService);
+                if(MainService.amIRunning) {
+
+                    Intent mainService = new Intent(this, MainService.class);
+                    stopService(mainService);
+
+                }
 
                 // è stato selezionata l'opzione di sign out dal menu
                 firebaseAuth.signOut();
@@ -133,7 +136,13 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             case R.id.quit_app_menuEntry:
 
                 // è stato selezionata l'opzione di sign out dal menu
-                stopService(mainService);
+                if(MainService.amIRunning) {
+
+                    Intent mainService = new Intent(this, MainService.class);
+                    stopService(mainService);
+
+                }
+
                 finish();
                 return true;
 
@@ -170,6 +179,21 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             return;
 
         }
+
+        /* se il servizio MainService non è già stato avviato, avvio il servizio MainService */
+        Intent mainService = new Intent(this, MainService.class);
+
+        // avvio il servizio
+        if (!MainService.amIRunning) {
+
+            startService(mainService);
+
+        } else {
+
+            assignCameraPreviewSurface();
+
+        }
+
         // inizializza il FirebaseAuth
         firebaseAuth = FirebaseAuth.getInstance();
 
@@ -200,6 +224,10 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         FirebaseInstanceId firebaseInstanceId = FirebaseInstanceId.getInstance();
         Log.d(TAG, firebaseInstanceId.getToken());
 
+        /* nascondo la SurfaceView per la visualizzazione della preview della camera */
+        SurfaceView cameraPreviewSurfaceView = (SurfaceView) findViewById(R.id.SFV___MAIN___CAMERA_PREVIEW);
+        cameraPreviewSurfaceView.setVisibility(View.GONE);
+
         // inizializzo handlers ai drawable
         Button takeShotButton = (Button) findViewById(R.id.BTN___MAIN___TAKESHOT);
         takeShotButton.setOnClickListener(
@@ -216,7 +244,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         );
 
-        // inizializzo handlers ai drawable
+        /* inizializzo handlers ai drawable e imposto gli OnClickListenetr*/
         Button videoLoopButton = (Button) findViewById(R.id.BTN___MAIN___STARTVIDEOLOOP);
 
         videoLoopButton.setOnClickListener(new View.OnClickListener() {
@@ -261,18 +289,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     protected void onResume() {
 
         super.onResume();
-        mainService = new Intent(this, MainService.class);
-
-        // avvio il servizio
-        if (!MainService.amIRunning) {
-
-            startService(mainService);
-
-        } else {
-
-            assignCameraPreviewSurface();
-
-        }
 
         // aggiorna l'interfaccia utente
         updateUI();
@@ -338,6 +354,8 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
             // ridimensiona l'holder per tenere il rapporto d'aspetto e occupare meno di metà schermo
             cameraPreviewHolder.setFixedSize(width / 2, (int) (width / 2.0 * cameraFrameRatio));
+
+            cameraPreview.setVisibility(View.VISIBLE);
 
         }
 
