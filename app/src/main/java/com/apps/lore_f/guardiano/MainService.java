@@ -78,7 +78,6 @@ public class MainService extends Service {
     // Service management
     public static boolean amIRunning = false;
     public static boolean isOpenCVLibraryLoaded = false;
-    public static boolean isVideoLoopRunning = false;
 
     public static int previewRotation = 0;
 
@@ -136,7 +135,11 @@ public class MainService extends Service {
                         @Override
                         public void onComplete(@NonNull Task<Void> task) {
 
-                            //Messaging.sendMessage();
+                            Messaging.sendNotification(
+                                    ""+deviceDescription+" detected a movement!",
+                                    "Tap here to view the recorded clip",
+                                    ""
+                            );
 
                         }
 
@@ -249,7 +252,6 @@ public class MainService extends Service {
 
                 Log.i(TAG, "Successfully wrote file " + pictureFile.getAbsolutePath());
 
-
             } catch (FileNotFoundException e) {
 
                 Log.d(TAG, "File not found: " + e.getMessage());
@@ -273,7 +275,17 @@ public class MainService extends Service {
                     Uri downloadUrl = taskSnapshot.getMetadata().getDownloadUrl();
 
                     PictureTakenMessage pictureTakenMessage = new PictureTakenMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), "Required by user", downloadUrl.toString(), deviceDescription);
-                    databaseReference.child(firebaseUser.getUid()).child(PICTURES_TAKEN_CHILD).push().setValue(pictureTakenMessage);
+                    databaseReference.child(firebaseUser.getUid()).child(PICTURES_TAKEN_CHILD).push().setValue(pictureTakenMessage).addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+
+                            Messaging.sendNotification(
+                                    "The picture you requested to "+deviceDescription+" has been uploaded!",
+                                    "Tap here to view the recorded picture",
+                                    ""
+                            );
+                        }
+                    });
 
                 }
             });
@@ -299,6 +311,7 @@ public class MainService extends Service {
         @Override
         public void onPreviewFrame(byte[] data, Camera camera) {
 
+            Log.d(TAG, "got frame");
             motionDetection.enterFrame(data);
 
         }

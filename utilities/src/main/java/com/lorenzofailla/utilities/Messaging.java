@@ -20,6 +20,55 @@ public class Messaging {
 
     private final static String TAG = "Messaging";
 
+    public static void sendNotification(final String notificationTitle, final String notificationMessage, final String mediaID) {
+
+        new AsyncTask<String, String, String>() {
+            @Override
+            protected String doInBackground(String... params) {
+                try {
+
+                    return getResponseFromMessagingServer(
+                            "http://lorenzofailla.esy.es/Guardiano/Messaging/sendmessage.php?Action=N&notificationTitle="+notificationTitle+
+                                    "&notificationMessage=" + notificationMessage +
+                                    "&mediaId=" + mediaID);
+
+                    // TODO: 29/01/2017 implementare, sia lato server che lato client, il time to live del messaggio
+
+                } catch (Exception e) {
+
+                    e.printStackTrace();
+                    return null;
+
+                }
+
+            }
+
+            @Override
+            protected void onPostExecute(String result) {
+                try {
+
+                    if (result != null) {
+
+                        JSONObject resultJson = new JSONObject(result);
+                        int success, failure;
+                        success = resultJson.getInt("success");
+                        failure = resultJson.getInt("failure");
+
+                        Log.d(TAG, "got response from messaging server: " + success + " success, " + failure + " failure");
+
+                    } else {
+
+                        Log.d(TAG, "got NULL response from messaging server");
+
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.execute();
+    }
+
+
     public static void sendMessage(final String recipient, final String message, final String sender) {
 
         new AsyncTask<String, String, String>() {
