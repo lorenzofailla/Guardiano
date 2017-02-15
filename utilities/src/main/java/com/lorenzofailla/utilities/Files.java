@@ -63,12 +63,13 @@ public class Files {
 
     public static byte[] getFileDataBytes(File inputFile){
 
-        byte[] dataStream = new byte[0];
+        byte[] dataStream = new byte[(int)inputFile.length()];;
 
         try {
 
             FileInputStream fileInputStream = new FileInputStream(inputFile);
             fileInputStream.read(dataStream);
+            fileInputStream.close();
 
         } catch (FileNotFoundException e) {
 
