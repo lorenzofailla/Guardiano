@@ -54,17 +54,12 @@ public class MainService extends Service {
     public static final String PICTURES_TAKEN_CHILD = "pictures_taken";
     public static final String ONLINE_DEVICES_CHILD = "online_devices";
     public static final String STORAGE_BUCKET = "gs://guardiano-2c543.appspot.com/";
-
+    public static final String REQUEST_UI_UPDATE = "CAMERACONTROL___REQUEST_UI_UPDATE";
+    public static final String MOTION_LEVEL_CHANGED = "CAMERACONTROL___MOTION_LEVEL_CHANGED";
+    public static final String SHOT_TAKEN = "CAMERACONTROL___SHOT_TAKEN";
+    public static final String CAMERA_STARTED = "CAMERACONTROL___CAMERA_STARTED";
     public static Camera mainCamera = null;
     public static MediaRecorder mediaRecorder;
-
-    // Firebase
-    public static FirebaseAuth firebaseAuth;
-    public static FirebaseUser firebaseUser;
-
-    // Firebase database
-    public static DatabaseReference databaseReference;
-    public static FirebaseDatabase firebaseDatabase;
 
     // Firebase storage
     public static StorageReference storageReference;
@@ -78,49 +73,36 @@ public class MainService extends Service {
     // Service management
     public static boolean amIRunning = false;
     public static boolean isOpenCVLibraryLoaded = false;
-
     public static int previewRotation = 0;
-
-    private static LocalBroadcastManager broadcastManager;
-    private static String dataBaseOnlineDeviceRegistrationEntry = null;
-
-    private static String TAG = "->MainService";
-
-    private static int previewFrameWidth;
-    private static int previewFrameHeight;
-
     public static double motionLevel;
     public static double motionLevelThreshold = 0.7; // TODO: 09/02/2017 settare tramite SharedPreferences
-
     public static MotionDetection motionDetection;
-    private static RequestListener requestListener;
-
     public static VideoLooper videoLooper;
-
-    public static final String REQUEST_UI_UPDATE = "CAMERACONTROL___REQUEST_UI_UPDATE";
-    public static final String MOTION_LEVEL_CHANGED = "CAMERACONTROL___MOTION_LEVEL_CHANGED";
-    public static final String SHOT_TAKEN = "CAMERACONTROL___SHOT_TAKEN";
-    public static final String CAMERA_STARTED = "CAMERACONTROL___CAMERA_STARTED";
-
+    private static LocalBroadcastManager broadcastManager;
+    private static String dataBaseOnlineDeviceRegistrationEntry = null;
+    private static String TAG = "->MainService";
+    private static int previewFrameWidth;
+    private static int previewFrameHeight;
+    private static RequestListener requestListener;
     private static VideoLooper.OnVideoLooperStatusChangedListener onVideoLooperStatusChangedListener = new VideoLooper.OnVideoLooperStatusChangedListener() {
         @Override
         public void onStatusChanged(int status) {
 
-            requestListener.newEvent(REQUEST_UI_UPDATE);
+            if (requestListener != null) requestListener.newEvent(REQUEST_UI_UPDATE);
 
         }
 
         @Override
         public void onCreated() {
 
-            requestListener.newEvent(REQUEST_UI_UPDATE);
+            if (requestListener != null) requestListener.newEvent(REQUEST_UI_UPDATE);
 
         }
 
         @Override
         public void loopKept(File resultFile) {
 
-            StorageReference videoToBeUploaded = storageReference.child(firebaseUser.getUid() + "/" + "pictures_taken/" + resultFile.getName());
+            StorageReference videoToBeUploaded = storageReference.child(FirebaseAuth.getInstance().getCurrentUser().getUid() + "/" + "pictures_taken/" + resultFile.getName());
             UploadTask uploadTask = videoToBeUploaded.putBytes(Files.getFileDataBytes(resultFile));
 
             uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -130,12 +112,12 @@ public class MainService extends Service {
                     Uri downloadUrl = taskSnapshot.getMetadata().getDownloadUrl();
 
                     PictureTakenMessage pictureTakenMessage = new PictureTakenMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), "New video sequence captured", downloadUrl.toString(), deviceDescription);
-                    databaseReference.child(firebaseUser.getUid()).child(PICTURES_TAKEN_CHILD).push().setValue(pictureTakenMessage).addOnCompleteListener(new OnCompleteListener<Void>() {
+                    FirebaseDatabase.getInstance().getReference().child(FirebaseAuth.getInstance().getCurrentUser().getUid()).child(PICTURES_TAKEN_CHILD).push().setValue(pictureTakenMessage).addOnCompleteListener(new OnCompleteListener<Void>() {
                         @Override
                         public void onComplete(@NonNull Task<Void> task) {
 
                             Messaging.sendNotification(
-                                    ""+deviceDescription+" detected a movement!",
+                                    "" + deviceDescription + " detected a movement!",
                                     "Tap here to view the recorded clip",
                                     ""
                             );
@@ -151,40 +133,6 @@ public class MainService extends Service {
         }
 
     };
-
-    public interface RequestListener{
-
-        void newEvent (String eventName);
-
-    }
-
-    public static void setRequestListener(RequestListener listener){
-
-        requestListener = listener;
-
-    }
-
-    MotionDetection.MotionDetectionOnValueChangeListener motionDetectionOnValueChangeListener = new MotionDetection.MotionDetectionOnValueChangeListener() {
-
-        @Override
-        public void onMotionValueChanged(double motionValue) {
-
-            // aggiorna il valore di motionLevel
-            motionLevel=motionValue;
-            requestListener.newEvent(MOTION_LEVEL_CHANGED);
-            /* Log.d(TAG, "motion level: " + motionValue); */
-
-        }
-
-        @Override
-        public void onThresholdExceeded() {
-
-            videoLooper.delayLoopAndKeepVideo();
-            Log.d(TAG, "motion detected");
-        }
-
-    };
-
     private static ValueEventListener deviceRegisteredValueEventListener = new ValueEventListener() {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
@@ -214,9 +162,10 @@ public class MainService extends Service {
             // inserisce un nuovo child con un nuovo OnlineDeviceMessage
             OnlineDeviceMessage onlineDeviceMessage = new OnlineDeviceMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), deviceToken, deviceDescription);
 
-            DatabaseReference onLineDeviceEntry = databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).push();
-            onLineDeviceEntry.addListenerForSingleValueEvent(deviceRegisteredValueEventListener);
 
+
+            DatabaseReference onLineDeviceEntry = FirebaseDatabase.getInstance().getReference().child(getUserId()).child(ONLINE_DEVICES_CHILD).push();
+            onLineDeviceEntry.addListenerForSingleValueEvent(deviceRegisteredValueEventListener);
             onLineDeviceEntry.setValue(onlineDeviceMessage);
 
         }
@@ -228,7 +177,10 @@ public class MainService extends Service {
 
     };
 
+    private static String getUserId(){
 
+        return FirebaseAuth.getInstance().getCurrentUser().getUid().toString();
+    }
 
     private static Camera.PictureCallback takeShotCallback = new Camera.PictureCallback() {
 
@@ -238,8 +190,10 @@ public class MainService extends Service {
             File pictureFile = Files.getOutputMediaFile(Files.MEDIA_TYPE_IMAGE);
 
             if (pictureFile == null) {
+
                 Log.d(TAG, "Error creating media file, check storage permissions.");
                 return;
+
             }
 
             try {
@@ -263,7 +217,7 @@ public class MainService extends Service {
             String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
             String pictureFilename = "IMG_" + deviceDescription + "_" + timeStamp + ".jpg";
 
-            StorageReference pictureToBeUploaded = storageReference.child(firebaseUser.getUid() + "/" + "pictures_taken/" + pictureFilename);
+            StorageReference pictureToBeUploaded = storageReference.child(getUserId() + "/" + "pictures_taken/" + pictureFilename);
             UploadTask uploadTask = pictureToBeUploaded.putBytes(data);
 
             uploadTask.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -273,12 +227,12 @@ public class MainService extends Service {
                     Uri downloadUrl = taskSnapshot.getMetadata().getDownloadUrl();
 
                     PictureTakenMessage pictureTakenMessage = new PictureTakenMessage(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), "Required by user", downloadUrl.toString(), deviceDescription);
-                    databaseReference.child(firebaseUser.getUid()).child(PICTURES_TAKEN_CHILD).push().setValue(pictureTakenMessage).addOnCompleteListener(new OnCompleteListener<Void>() {
+                    FirebaseDatabase.getInstance().getReference().child(getUserId()).child(PICTURES_TAKEN_CHILD).push().setValue(pictureTakenMessage).addOnCompleteListener(new OnCompleteListener<Void>() {
                         @Override
                         public void onComplete(@NonNull Task<Void> task) {
 
                             Messaging.sendNotification(
-                                    "The picture you requested to "+deviceDescription+" has been uploaded!",
+                                    "The picture you requested to " + deviceDescription + " has been uploaded!",
                                     "Tap here to view the recorded picture",
                                     ""
                             );
@@ -294,7 +248,26 @@ public class MainService extends Service {
         }
 
     };
+    MotionDetection.MotionDetectionOnValueChangeListener motionDetectionOnValueChangeListener = new MotionDetection.MotionDetectionOnValueChangeListener() {
 
+        @Override
+        public void onMotionValueChanged(double motionValue) {
+
+            // aggiorna il valore di motionLevel
+            motionLevel = motionValue;
+            requestListener.newEvent(MOTION_LEVEL_CHANGED);
+            /* Log.d(TAG, "motion level: " + motionValue); */
+
+        }
+
+        @Override
+        public void onThresholdExceeded() {
+
+            videoLooper.delayLoopAndKeepVideo();
+            Log.d(TAG, "motion detected");
+        }
+
+    };
     Camera.FaceDetectionListener faceDetectionListener = new Camera.FaceDetectionListener() {
         @Override
         public void onFaceDetection(Camera.Face[] faces, Camera camera) {
@@ -304,7 +277,6 @@ public class MainService extends Service {
         }
 
     };
-
     Camera.PreviewCallback previewCallback = new Camera.PreviewCallback() {
         @Override
         public void onPreviewFrame(byte[] data, Camera camera) {
@@ -315,7 +287,6 @@ public class MainService extends Service {
         }
 
     };
-
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
 
         public void onReceive(Context context, Intent intent) {
@@ -339,9 +310,16 @@ public class MainService extends Service {
         }
     };
 
+    public static void setRequestListener(RequestListener listener) {
+
+        requestListener = listener;
+
+    }
+
     private static void registerDeviceInDatabase(String deviceToken, String deviceDescription) {
 
-        DatabaseReference onlineDevicesDatabaseReference = databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD);
+        // inizializzo il database di Firebase
+        DatabaseReference onlineDevicesDatabaseReference = FirebaseDatabase.getInstance().getReference().child(FirebaseAuth.getInstance().getCurrentUser().getUid()).child(ONLINE_DEVICES_CHILD);
         Query onlineDevicesQuery = onlineDevicesDatabaseReference.orderByChild("deviceDescription").equalTo(deviceDescription);
         onlineDevicesQuery.addListenerForSingleValueEvent(onlineDevicesValueEventListener);
 
@@ -359,8 +337,6 @@ public class MainService extends Service {
         }
 
     }
-
-
 
     @Override
     public void onCreate() {
@@ -383,9 +359,6 @@ public class MainService extends Service {
         // registro il ricevitore di intent sul BroadcastManager registrato
         broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
 
-        // inizializzo il database di Firebase
-        databaseReference = FirebaseDatabase.getInstance().getReference();
-
         // inizializzo lo starage di Firebase
         storageReference = FirebaseStorage.getInstance().getReferenceFromUrl(STORAGE_BUCKET);
 
@@ -397,7 +370,7 @@ public class MainService extends Service {
 
             videoLooper = new VideoLooper(mainCamera);
             videoLooper.setOnVideoLooperStatusChangedListener(onVideoLooperStatusChangedListener);
-            motionDetection=new MotionDetection(previewFrameWidth,previewFrameHeight,motionLevelThreshold);
+            motionDetection = new MotionDetection(previewFrameWidth, previewFrameHeight, motionLevelThreshold);
             motionDetection.setMotionDetectionOnValueChangeListener(motionDetectionOnValueChangeListener);
             mainCamera.setPreviewCallback(previewCallback);
             mainCamera.startPreview();
@@ -413,7 +386,7 @@ public class MainService extends Service {
 
             }
 
-            requestListener.newEvent(CAMERA_STARTED);
+            if(requestListener!=null) requestListener.newEvent(CAMERA_STARTED);
 
         }
 
@@ -470,7 +443,7 @@ public class MainService extends Service {
         /* de-registra il dispositivo dal database */
         if (dataBaseOnlineDeviceRegistrationEntry != null) {
 
-            databaseReference.child(firebaseUser.getUid()).child(ONLINE_DEVICES_CHILD).child(dataBaseOnlineDeviceRegistrationEntry).removeValue();
+            FirebaseDatabase.getInstance().getReference().child(getUserId()).child(ONLINE_DEVICES_CHILD).child(dataBaseOnlineDeviceRegistrationEntry).removeValue();
             dataBaseOnlineDeviceRegistrationEntry = null;
 
         }
@@ -517,7 +490,7 @@ public class MainService extends Service {
             previewFrameWidth = cameraParameters.getPreviewSize().width;
             previewFrameHeight = cameraParameters.getPreviewSize().height;
 
-            cameraParameters.setPreviewSize(previewFrameWidth,previewFrameHeight);
+            cameraParameters.setPreviewSize(previewFrameWidth, previewFrameHeight);
             mainCamera.setParameters(cameraParameters);
 
         }
@@ -546,6 +519,11 @@ public class MainService extends Service {
 
     }
 
+    public interface RequestListener {
+
+        void newEvent(String eventName);
+
+    }
 
 
 }

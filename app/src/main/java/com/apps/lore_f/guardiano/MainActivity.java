@@ -51,9 +51,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import static com.apps.lore_f.guardiano.MainService.firebaseAuth;
-import static com.apps.lore_f.guardiano.MainService.firebaseUser;
-
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, GoogleApiClient.OnConnectionFailedListener {
 
     private SurfaceView cameraPreview;
@@ -62,6 +59,9 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     private final static String TAG = "_MainActivity";
 
     private GoogleApiClient googleApiClient;
+
+    private FirebaseAuth firebaseAuth;
+    private FirebaseUser firebaseUser;
 
     SharedPreferences sharedPreferences;
 
@@ -180,20 +180,6 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
 
         }
 
-        /* se il servizio MainService non è già stato avviato, avvio il servizio MainService */
-        Intent mainService = new Intent(this, MainService.class);
-
-        // avvio il servizio
-        if (!MainService.amIRunning) {
-
-            startService(mainService);
-
-        } else {
-
-            assignCameraPreviewSurface();
-
-        }
-
         // inizializza il FirebaseAuth
         firebaseAuth = FirebaseAuth.getInstance();
 
@@ -207,6 +193,20 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             startActivity(new Intent(this, SignInActivity.class));
             finish();
             return;
+
+        }
+
+        /* se il servizio MainService non è già stato avviato, avvio il servizio MainService */
+        Intent mainService = new Intent(this, MainService.class);
+
+        // avvio il servizio
+        if (!MainService.amIRunning) {
+
+            startService(mainService);
+
+        } else {
+
+            assignCameraPreviewSurface();
 
         }
 

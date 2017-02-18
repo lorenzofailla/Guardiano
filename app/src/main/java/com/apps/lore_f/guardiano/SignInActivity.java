@@ -45,8 +45,6 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.GoogleAuthProvider;
 
-import static com.apps.lore_f.guardiano.MainService.firebaseAuth;
-
 public class SignInActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener, View.OnClickListener {
 
@@ -54,7 +52,7 @@ public class SignInActivity extends AppCompatActivity implements
     private static final int RC_SIGN_IN = 9001;
 
     private SignInButton mSignInButton;
-
+    private FirebaseAuth firebaseAuth;
     private GoogleApiClient mGoogleApiClient;
 
     @Override
